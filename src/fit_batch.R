@@ -18,6 +18,7 @@ library("rstan")
 library("feather")
 library("plyr")
 library("dplyr")
+library("reshape2")
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
