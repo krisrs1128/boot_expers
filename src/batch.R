@@ -2,7 +2,6 @@
 
 # File description -------------------------------------------------------------
 
-
 output_path <- function(dir) {
   function(filename) {
     file.path(dir, filename)
@@ -33,7 +32,9 @@ create_job <- function(outfile,
                   sprintf("#SBATCH --time=%s", time_alloc),
                   "#################",
                   "#memory per node; default is 4000 MB per CPU",
-                  sprintf("#SBATCH --mem=%d", mem_alloc)
+                  sprintf("#SBATCH --mem=%d", mem_alloc),
+                  "#SBATCH --mail-type=ALL",
+                  "#SBATCH --mail-user=kriss1@stanford.edu"
                   )
   ml_opts <- paste("ml", modules) %>%
     paste(collapse = "\n")
