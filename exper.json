@@ -1,0 +1,22 @@
+{
+  "paths": {
+    "base": "~/20161207/",
+    "params_dir": "params/",
+    "data_dir": "data/",
+    "output_dir": "output/",
+    "tmp_dir": "tmp/"
+  },
+  "model": {
+    "alpha0": 1,
+    "gamma0": 1,
+    "N": 1000,
+    "D": 100,
+    "V": 10,
+    "K": 2
+  },
+  "parallel": {
+    "replicates": 100,
+    "batches": 10,
+    "basename": "test"
+  }
+}
