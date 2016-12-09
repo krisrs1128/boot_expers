@@ -76,7 +76,7 @@ ggplot() +
   facet_wrap(~n) +
   theme(
     panel.border = element_rect(fill = "transparent"),
-    panel.margin = unit(0, "line")
+    panel.spacing = unit(0, "line")
   )
 
 ## ---- vis-beta ----
@@ -90,7 +90,11 @@ ggplot() +
   geom_histogram(data = mbeta, aes(x = value), binwidth = 0.003) +
   geom_vline(data = mbeta_truth, aes(xintercept = value), col = "#8CADE1") +
   geom_vline(data = beta_master, aes(xintercept = value), col = "#E39B5C") +
-  facet_wrap(~v)
+  facet_wrap(~v) +
+  theme(
+    panel.border = element_rect(fill = "transparent"),
+    panel.spacing = unit(0, "line")
+  )
 
 ## ---- tours ----
 projs <- combn(exper$model$V, 3)
@@ -112,10 +116,10 @@ p_beta_master <- beta_master %>%
   select(-k) %>%
   as.matrix()
 
-p_beta_truth <- beta_truth %>%
+p_beta_truth <- mbeta_truth %>%
+  dcast(k ~ v) %>%
   select(-k) %>%
   as.matrix()
-colnames(p_beta_truth) <- seq_len(ncol(p_beta_truth))
 
 p_beta <- rbind(
   data.frame(type = "bootstrap", p_beta),
@@ -130,6 +134,9 @@ beta_row_coords <- data.frame(
 )
 
 ggplot() +
-  geom_point(data = beta_row_coords, aes(x = Dim.1, y = Dim.2, col = type)) +
+  geom_point(data = beta_row_coords %>% filter(type == "bootstrap"),
+             aes(x = Dim.1, y = Dim.2, col = type), size = .5, alpha = 0.5) +
+  geom_point(data = beta_row_coords %>% filter(type != "bootstrap"),
+             aes(x = Dim.1, y = Dim.2, col = type)) +
   scale_color_brewer(palette = "Set2") +
   coord_fixed()
