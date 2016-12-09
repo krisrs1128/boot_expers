@@ -52,7 +52,7 @@ theta_master <- output_dir %>%
   read_feather()
 
 ggplot() +
-  geom_histogram(data = theta, aes(x = theta), binwidth = .03) +
+  geom_histogram(data = theta, aes(x = theta), binwidth = 0.03) +
   geom_vline(data = theta_truth, aes(xintercept = value), col = "#8CADE1") +
   geom_vline(data = theta_master, aes(xintercept = theta), col = "#E39B5C") +
   facet_wrap(~n) +
@@ -60,3 +60,14 @@ ggplot() +
     panel.border = element_rect(fill = "transparent"),
     panel.margin = unit(0, "line")
   )
+
+## ---- vis-beta ----
+mbeta <- beta %>%
+  melt(
+    id.vars = c("file", "rep", "k"),
+    variable.name = "v"
+  )
+
+ggplot(mbeta) +
+  geom_histogram(aes(x = value), binwidth = 0.003) +
+  facet_wrap(~v)
