@@ -1,6 +1,6 @@
 {
   "paths": {
-    "base": "~/20161208/",
+    "base": "~/20161209/",
     "params_dir": "params/",
     "data_dir": "data/",
     "output_dir": "output/",
@@ -17,6 +17,9 @@
   "parallel": {
     "replicates": 100,
     "batches": 10,
-    "basename": "test"
+    "basename": "lda_boot",
+    "partitions": "hns,normal",
+    "mem_alloc": 4000,
+    "time_alloc": "00:10:00"
   }
 }

@@ -10,7 +10,7 @@ output_path <- function(dir) {
 
 merge_defaults <- function(opts) {
   defaults <- list(
-    "modules" = c("gcc", "R/3.3.0"),
+    "modules" = "R/3.3.0",
     "time_alloc" = "01:00:00",
     "mem_alloc" = 1000,
     "email" = "kriss1@stanford.edu",

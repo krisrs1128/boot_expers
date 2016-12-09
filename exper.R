@@ -7,6 +7,7 @@
 # author: kriss1@stanford.edu
 
 ## ---- setup ----
+library("rstan")
 library("plyr")
 library("dplyr")
 library("jsonlite")
@@ -84,7 +85,11 @@ for (i in seq_len(parallel$batches)) {
     file.path(paths$base, paths$tmp_dir, jobname),
     jobname,
     rscript_cmd,
-    list(partitions="hns,normal", mem_alloc = 1000, time_alloc = "00:10:00")
+    list(
+      partitions=parallel$partitions,
+      mem_alloc = parallel$mem,
+      time_alloc = parallel$time_alloc
+    )
   )
 
   system(paste0("sbatch ", file.path(paths$base, paths$tmp_dir, jobname)))
