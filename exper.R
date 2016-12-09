@@ -7,6 +7,7 @@
 # author: kriss1@stanford.edu
 
 ## ---- setup ----
+args <- commandArgs(trailingOnly=TRUE) # give the JSON file specifying the experiment
 library("rstan")
 library("plyr")
 library("dplyr")
@@ -17,7 +18,7 @@ for (f in list.files("src", ".R", full.names = TRUE)) {
   if (basename(f) == "fit_batch.R") next
   source(f)
 }
-exper <- fromJSON("exper.json")
+exper <- fromJSON(args[[1]])
 
 ## ---- setup-directories ----
 paths <- exper$paths
