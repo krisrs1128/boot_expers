@@ -40,7 +40,7 @@ theta <- output_dir %>%
   list.files("theta_hat_[0-9]+", full.names = TRUE) %>%
   combine_replicates()
 
-## ---- vis-theta ----
+## ---- theta-benchmarks ----
 theta_truth <- file.path(paths$base, paths$params, "theta.feather") %>%
   read_feather()
 theta_truth$n <- seq_len(nrow(theta_truth))
@@ -51,6 +51,22 @@ theta_master <- output_dir %>%
   list.files("theta_hat_master", full.names = TRUE) %>%
   read_feather()
 
+## ---- beta-benchmarks ----
+beta_truth <- file.path(paths$base, paths$params, "beta.feather") %>%
+  read_feather()
+beta_truth$k <- seq_len(nrow(beta_truth))
+mbeta_truth <- beta_truth %>%
+  melt(id.vars = "k", variable.name = "v")
+mbeta_truth$v <- gsub("V", "", mbeta_truth$v)
+
+beta_master <- output_dir %>%
+  list.files("beta_hat_master", full.names = TRUE) %>%
+  read_feather()
+colnames(beta_master)[1] <- "k"
+beta_master <- beta_master %>%
+  melt(id.vars = "k", variable.name = "v")
+
+## ---- vis-theta ----
 ggplot() +
   geom_histogram(data = theta, aes(x = theta), binwidth = 0.03) +
   geom_vline(data = theta_truth, aes(xintercept = value), col = "#8CADE1") +
@@ -68,6 +84,8 @@ mbeta <- beta %>%
     variable.name = "v"
   )
 
-ggplot(mbeta) +
-  geom_histogram(aes(x = value), binwidth = 0.003) +
+ggplot() +
+  geom_histogram(data = mbeta, aes(x = value), binwidth = 0.003) +
+  geom_vline(data = mbeta_truth, aes(xintercept = value), col = "#8CADE1") +
+  geom_vline(data = beta_master, aes(xintercept = value), col = "#E39B5C") +
   facet_wrap(~v)
