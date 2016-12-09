@@ -7,10 +7,13 @@
 # author: kriss1@stanford.edu
 
 ## ---- setup ----
+library("plyr")
+library("dplyr")
 library("jsonlite")
 library("data.table")
 library("feather")
 for (f in list.files("src", ".R", full.names = TRUE)) {
+  if (basename(f) == "fit_batch.R") next
   source(f)
 }
 exper <- fromJSON("exper.json")
@@ -58,6 +61,7 @@ batches <- rep(seq_len(parallel$batches), length.out = parallel$replicates) %>%
 run_opts <- c(
   file.path(getwd(), "src"),
   model$N,
+  model$alpha0,
   path_output("theta_hat_master.feather"),
   path_output("beta_hat_master.feather"),
   file.path(paths$base, paths$output_dir)
@@ -79,7 +83,8 @@ for (i in seq_len(parallel$batches)) {
   create_job(
     file.path(paths$base, paths$tmp_dir, jobname),
     jobname,
-    rscript_cmd
+    rscript_cmd,
+    list(partitions="hns,normal", mem_alloc = 1000, time_alloc = "00:10:00")
   )
 
   system(paste0("sbatch ", file.path(paths$base, paths$tmp_dir, jobname)))

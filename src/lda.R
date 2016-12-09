@@ -17,10 +17,11 @@ generate_params <- function(D, K, V, alpha0, gamma0) {
 }
 
 generate_data <- function(N, theta, beta) {
-  matrix(
-    rmultinom(1, N, as.numeric(theta %*% beta)),
-    nrow = nrow(theta)
-  )
+  X <- matrix(nrow = nrow(theta), ncol = ncol(beta))
+  for (i in seq_len(nrow(theta))) {
+    X[i, ] <- rmultinom(1, N, t(beta) %*% theta[i, ])
+  }
+  X
 }
 
 
@@ -43,12 +44,6 @@ generate_data <- function(N, theta, beta) {
 #' @importFrom dplyr group_by summarise
 #' @importFrom data.table data.table
 fit_model <- function(stan_data, stan_file, keep_samples = FALSE) {
-  library("plyr")
-  library("dplyr")
-  library("reshape2")
-  library("rstan")
-  library("data.table")
-
   # fit model
   m <- stan_model(file = stan_file)
   stan_fit <- vb(m, stan_data)
