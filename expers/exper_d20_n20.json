@@ -1,0 +1,25 @@
+{
+  "paths": {
+    "base": "/scratch/users/kriss1/output/d20_n20/",
+    "params_dir": "params/",
+    "data_dir": "data/",
+    "output_dir": "output/",
+    "tmp_dir": "tmp/"
+  },
+  "model": {
+    "alpha0": 1,
+    "gamma0": 1,
+    "N": 20,
+    "D": 20,
+    "V": 10,
+    "K": 2
+  },
+  "parallel": {
+    "replicates": 1000,
+    "batches": 10,
+    "basename": "lda_small_d_small_n",
+    "partitions": "hns,normal",
+    "mem_alloc": 4000,
+    "time_alloc": "00:10:00"
+  }
+}
