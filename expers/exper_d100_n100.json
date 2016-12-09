@@ -1,6 +1,6 @@
 {
   "paths": {
-    "base": "~/20161208/",
+    "base": "/scratch/users/kriss1/output/d100_n100/",
     "params_dir": "params/",
     "data_dir": "data/",
     "output_dir": "output/",
@@ -9,14 +9,17 @@
   "model": {
     "alpha0": 1,
     "gamma0": 1,
-    "N": 1000,
+    "N": 100,
     "D": 100,
     "V": 10,
     "K": 2
   },
   "parallel": {
-    "replicates": 100,
+    "replicates": 1000,
     "batches": 10,
-    "basename": "test"
+    "basename": "lda",
+    "partitions": "hns,normal",
+    "mem_alloc": 4000,
+    "time_alloc": "00:10:00"
   }
 }

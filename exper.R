@@ -7,6 +7,8 @@
 # author: kriss1@stanford.edu
 
 ## ---- setup ----
+args <- commandArgs(trailingOnly=TRUE) # give the JSON file specifying the experiment
+library("rstan")
 library("plyr")
 library("dplyr")
 library("jsonlite")
@@ -16,7 +18,7 @@ for (f in list.files("src", ".R", full.names = TRUE)) {
   if (basename(f) == "fit_batch.R") next
   source(f)
 }
-exper <- fromJSON("exper.json")
+exper <- fromJSON(args[[1]])
 
 ## ---- setup-directories ----
 paths <- exper$paths
@@ -84,7 +86,11 @@ for (i in seq_len(parallel$batches)) {
     file.path(paths$base, paths$tmp_dir, jobname),
     jobname,
     rscript_cmd,
-    list(partitions="hns,normal", mem_alloc = 1000, time_alloc = "00:10:00")
+    list(
+      partitions=parallel$partitions,
+      mem_alloc = parallel$mem,
+      time_alloc = parallel$time_alloc
+    )
   )
 
   system(paste0("sbatch ", file.path(paths$base, paths$tmp_dir, jobname)))
