@@ -35,9 +35,10 @@ combine_replicates <- function(files) {
 simplex_proj <- function(p, coords) {
   mp <- p[, coords] %>%
     melt() %>%
-    dcast(Var1 ~ Var2)
-  colnames(mp)[-1] <- paste0("dim_", colnames(mp)[-1])
-  dims <- colnames(mp)[-1]
+    dcast(Var1 ~ Var2) %>%
+    select(-Var1)
+  colnames(mp) <- paste0("dim_", colnames(mp))
+  dims <- colnames(mp)
 
   ggtern(mp) +
     geom_point(aes_string(x = dims[1], y = dims[2], z = dims[3])) +
