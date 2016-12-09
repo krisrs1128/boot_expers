@@ -10,6 +10,7 @@ library("dplyr")
 library("ggplot2")
 library("ggtern")
 library("reshape2")
+library("FactoMineR")
 
 # minimal theme for ggplots
 theme_set(theme_bw())
@@ -94,13 +95,41 @@ ggplot() +
 ## ---- tours ----
 projs <- combn(exper$model$V, 3)
 
-p <- mbeta %>%
+p_beta <- mbeta %>%
   select(-file) %>%
   dcast(k + rep ~ v) %>%
   select(-k, -rep) %>%
   as.matrix()
 
 for (i in seq_len(10)) {
-  simplex_proj(p, projs[, i]) %>%
+  simplex_proj(p_beta, projs[, i]) %>%
     print()
 }
+
+## ---- correspondence-analysis ----
+p_beta_master <- beta_master %>%
+  dcast(k ~ v) %>%
+  select(-k) %>%
+  as.matrix()
+
+p_beta_truth <- beta_truth %>%
+  select(-k) %>%
+  as.matrix()
+colnames(p_beta_truth) <- seq_len(ncol(p_beta_truth))
+
+p_beta <- rbind(
+  data.frame(type = "bootstrap", p_beta),
+  data.frame(type = "master", p_beta_master),
+  data.frame(type = "truth", p_beta_truth)
+)
+
+ca_beta <- CA(p_beta %>% select(-type))
+beta_row_coords <- data.frame(
+  type = p_beta$type,
+  ca_beta$row$coord
+)
+
+ggplot() +
+  geom_point(data = beta_row_coords, aes(x = Dim.1, y = Dim.2, col = type)) +
+  scale_color_brewer(palette = "Set2") +
+  coord_fixed()
