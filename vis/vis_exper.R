@@ -8,6 +8,7 @@ library("feather")
 library("plyr")
 library("dplyr")
 library("ggplot2")
+library("ggtern")
 library("reshape2")
 
 # minimal theme for ggplots
@@ -89,3 +90,17 @@ ggplot() +
   geom_vline(data = mbeta_truth, aes(xintercept = value), col = "#8CADE1") +
   geom_vline(data = beta_master, aes(xintercept = value), col = "#E39B5C") +
   facet_wrap(~v)
+
+## ---- tours ----
+projs <- combn(exper$model$V, 3)
+
+p <- mbeta %>%
+  select(-file) %>%
+  dcast(k + rep ~ v) %>%
+  select(-k, -rep) %>%
+  as.matrix()
+
+for (i in seq_len(10)) {
+  simplex_proj(p, projs[, i]) %>%
+    print()
+}
