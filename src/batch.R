@@ -10,9 +10,9 @@ output_path <- function(dir) {
 
 merge_defaults <- function(opts) {
   defaults <- list(
-    "modules" = c("R/3.3.0"),
-    "time_alloc" = "00:15:00",
-    "mem_alloc" = 2000,
+    "modules" = c("gcc", "R/3.3.0"),
+    "time_alloc" = "01:00:00",
+    "mem_alloc" = 1000,
     "email" = "kriss1@stanford.edu",
     "partitions" = "normal,hns",
     "mail_type" = "ALL"
