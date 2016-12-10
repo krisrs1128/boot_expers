@@ -29,7 +29,7 @@ min_theme <- theme_update(
 
 setwd("/scratch/users/kriss1/working/boot_expers")
 source("vis/vis_utils.R")
-exper <- fromJSON("exper.json")
+exper <- fromJSON("expers/exper_d100_n100.json")
 
 ## ---- read-output ----
 paths <- exper$paths
@@ -70,12 +70,12 @@ beta_master <- beta_master %>%
 
 ## ---- vis-theta ----
 ggplot() +
-  geom_histogram(data = theta, aes(x = theta), binwidth = 0.03) +
-  geom_vline(data = theta_truth, aes(xintercept = value), col = "#8CADE1") +
-  geom_vline(data = theta_master, aes(xintercept = theta), col = "#E39B5C") +
+  geom_histogram(data = theta, aes(x = theta), binwidth = 0.01) +
+  geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+  geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
   facet_wrap(~n) +
   theme(
-    panel.border = element_rect(fill = "transparent"),
+    panel.border = element_rect(fill = "transparent", size = 0.4),
     panel.spacing = unit(0, "line")
   )
 
@@ -88,11 +88,11 @@ mbeta <- beta %>%
 
 ggplot() +
   geom_histogram(data = mbeta, aes(x = value), binwidth = 0.003) +
-  geom_vline(data = mbeta_truth, aes(xintercept = value), col = "#8CADE1") +
-  geom_vline(data = beta_master, aes(xintercept = value), col = "#E39B5C") +
+  geom_vline(data = mbeta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+  geom_vline(data = beta_master, aes(xintercept = value), linetype = 2, col = "#696969") +
   facet_wrap(~v) +
   theme(
-    panel.border = element_rect(fill = "transparent"),
+    panel.border = element_rect(fill = "transparent", size = 0.4),
     panel.spacing = unit(0, "line")
   )
 
@@ -140,3 +140,70 @@ ggplot() +
              aes(x = Dim.1, y = Dim.2, col = type)) +
   scale_color_brewer(palette = "Set2") +
   coord_fixed()
+
+## ---- alignment-approach ----
+R <- max(mbeta$rep)
+beta_master_mat <- beta_master %>%
+  dcast(k ~ v) %>%
+  select(-k) %>%
+  as.matrix()
+
+for (i in seq_len(R)) {
+  if (i %% 20 == 0) {
+    cat(sprintf("aligning replicate %d\n", i))
+  }
+
+  cur_ix <- which(mbeta$rep == i)
+  cur_beta <- mbeta[cur_ix, ] %>%
+    dcast(k ~ v) %>%
+    select(-k)
+
+  pi <- match_matrix(beta_master_mat, cur_beta)
+  mbeta[cur_ix, "k"] <- mbeta[cur_ix[pi], "k"]
+}
+
+## ---- visualize-aligned ----
+ggplot() +
+  geom_histogram(data = mbeta,
+                 aes(x = value, fill = as.factor(k)),
+                 binwidth = .003, alpha = 0.8, position = "identity") +
+  geom_vline(data = mbeta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+  geom_vline(data = beta_master, aes(xintercept = value), linetype = 2, col = "#696969") +
+  scale_fill_brewer(palette = "Set2") +
+  facet_wrap(~v) +
+  theme(
+    panel.border = element_rect(fill = "transparent", size = 0.4),
+    panel.spacing = unit(0, "line")
+  )
+
+## ---- align-theta ----
+theta_master_mat <- theta_master %>%
+  dcast(k ~ n) %>%
+  select(-k) %>%
+  as.matrix()
+
+for (i in seq_len(R)) {
+  if (i %% 20 == 0) {
+    cat(sprintf("aligning replicate %d\n", i))
+  }
+
+  cur_ix <- which(theta$rep == i)
+  cur_theta <- theta[cur_ix, ] %>%
+    dcast(k ~ n, value.var = "theta") %>%
+    select(-k)
+
+  pi <- match_matrix(theta_master_mat, cur_theta)
+  theta[cur_ix, "k"] <- theta[cur_ix[pi], "k"]
+}
+
+ggplot() +
+  geom_histogram(data = theta, aes(x = theta, fill = as.factor(k)),
+                 binwidth = 0.01, alpha = 0.8, position = "identity") +
+  geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+  geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
+  scale_fill_brewer(palette = "Set2") +
+  facet_wrap(~n) +
+  theme(
+    panel.border = element_rect(fill = "transparent", size = 0.4),
+    panel.spacing = unit(0, "line")
+  )
