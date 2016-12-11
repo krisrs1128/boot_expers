@@ -100,8 +100,8 @@ beta_master$v <- factor(beta_master$v, levels = v_order)
 ggplot() +
   geom_hline(yintercept = 0, size = 0.5, col = "#696969") +
   geom_histogram(data = mbeta, aes(x = value), binwidth = 0.003) +
-  geom_point(data = mbeta_truth, aes(x = value, y = 0), size = 4, col = "#80B6A0") +
-  geom_point(data = beta_master, aes(x = value, y = 0), size = 4, col = "#EB9762") +
+  geom_point(data = mbeta_truth, aes(x = value, y = 0), size = 4, shape = 1) +
+  geom_point(data = beta_master, aes(x = value, y = 0), size = 4, shape = 2) +
   coord_flip() +
   facet_grid(. ~ v)
 
@@ -172,6 +172,17 @@ for (i in seq_len(R)) {
 }
 
 ## ---- visualize-aligned ----
+ggplot() +
+  geom_hline(yintercept = 0, size = 0.5, col = "#696969") +
+  geom_histogram(data = mbeta, aes(x = value, fill = as.factor(k)),
+                 binwidth = 0.003, alpha = 0.8, position = "identity") +
+  geom_point(data = mbeta_truth, aes(x = value, y = 0), size = 4, shape = 1) +
+  geom_point(data = beta_master, aes(x = value, y = 0), size = 4, shape = 2) +
+  scale_fill_brewer(palette = "Set2") +
+  coord_flip() +
+  facet_grid(. ~ v)
+
+
 ggplot() +
   geom_histogram(data = mbeta,
                  aes(x = value, fill = as.factor(k)),
