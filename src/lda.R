@@ -35,6 +35,8 @@ generate_data <- function(N, theta, beta) {
 #'   LDA model.
 #' @param keep_samples {bool} Whether to keep samples from the model
 #'   posterior. Otherwise only returns (sampled) posterior mean.
+#' @param use_vb {bool} Should we use variational bayes? If false,
+#'   uses gibbs sampling.
 #' @return result {list of data.table} A list of data.tables giving
 #'   means for beta, theta, and (optionally) samples for beta and
 #'   theta.
@@ -43,10 +45,15 @@ generate_data <- function(N, theta, beta) {
 #' @importFrom magrittr %>%
 #' @importFrom dplyr group_by summarise
 #' @importFrom data.table data.table
-fit_model <- function(stan_data, stan_file, keep_samples = FALSE) {
+fit_model <- function(stan_data, stan_file, keep_samples = FALSE,
+                      use_vb = TRUE) {
   # fit model
-  m <- stan_model(file = stan_file)
-  stan_fit <- vb(m, stan_data)
+  if (vb) {
+    m <- stan_model(file = stan_file)
+    stan_fit <- vb(m, stan_data)
+  } else {
+    stan_fit <- stan(stan_file, data = stan_data)
+  }
 
   # get samples
   samples <- rstan::extract(stan_fit)
