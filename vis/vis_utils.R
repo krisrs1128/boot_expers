@@ -97,3 +97,37 @@ match_matrix <- function(X, Z) {
 
   pi_result
 }
+
+#' Identify permutations to match multiple matrices with a preset one
+#'
+#' This is a wrapper of match_matrix that aligns a large collection of
+#' melted matrices (Xs) to one preset one (Z).
+#'
+#' @param Xs [data.frame] A collection of melted matrices. The
+#'   required columns are,
+#'    rep: which matrix replicate is it?
+#'    row: What row in the current matrix is it? This is what we will
+#'     permutate.
+#'    col: What column in the current matrix is it?
+#' @param Z [matrix] This is the matrix to which we want to align
+#'   the X matrices with.
+#' @return Xs [data.frame] A version of X with the "row" column
+#'   permuted so that rows align with the rows of Z
+match_matrices <- function(Xs, Z) {
+  R <- max(Xs$rep)
+
+  for (i in seq_len(R)) {
+    if (i %% 50 == 0) {
+      cat(sprintf("aligning replicate %d\n", i))
+    }
+
+    cur_ix <- which(Xs$rep == i)
+    cur_x <- Xs[cur_ix, ] %>%
+      dcast(row ~ col, value.var = "value") %>%
+      select(-row)
+
+    pi <- match_matrix(cur_x, Z)
+    Xs[cur_ix, "row"] <- Xs[cur_ix[pi], "row"]
+  }
+  Xs
+}
