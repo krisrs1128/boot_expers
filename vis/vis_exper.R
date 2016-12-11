@@ -86,15 +86,24 @@ mbeta <- beta %>%
     variable.name = "v"
   )
 
+v_order <- mbeta %>%
+  group_by(v) %>%
+  summarise(mean = max(value)) %>%
+  arrange(desc(mean)) %>%
+  select(v) %>%
+  unlist()
+
+mbeta$v <- factor(mbeta$v, levels = v_order)
+mbeta_truth$v <- factor(mbeta_truth$v, levels = v_order)
+beta_master$v <- factor(beta_master$v, levels = v_order)
+
 ggplot() +
+  geom_hline(yintercept = 0, size = 0.5, col = "#696969") +
   geom_histogram(data = mbeta, aes(x = value), binwidth = 0.003) +
-  geom_vline(data = mbeta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
-  geom_vline(data = beta_master, aes(xintercept = value), linetype = 2, col = "#696969") +
-  facet_wrap(~v) +
-  theme(
-    panel.border = element_rect(fill = "transparent", size = 0.4),
-    panel.spacing = unit(0, "line")
-  )
+  geom_point(data = mbeta_truth, aes(x = value, y = 0), size = 4, col = "#80B6A0") +
+  geom_point(data = beta_master, aes(x = value, y = 0), size = 4, col = "#EB9762") +
+  coord_flip() +
+  facet_grid(. ~ v)
 
 ## ---- tours ----
 projs <- combn(exper$model$V, 3)
@@ -207,3 +216,7 @@ ggplot() +
     panel.border = element_rect(fill = "transparent", size = 0.4),
     panel.spacing = unit(0, "line")
   )
+
+## ---- vb-samples ----
+theta_samples <- file.path(output_dir, "theta_master_samples.feather") %>%
+  read_feather()
