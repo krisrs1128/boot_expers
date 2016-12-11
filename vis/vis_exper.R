@@ -98,12 +98,16 @@ mbeta_truth$v <- factor(mbeta_truth$v, levels = v_order)
 beta_master$v <- factor(beta_master$v, levels = v_order)
 
 ggplot() +
-  geom_hline(yintercept = 0, size = 0.5, col = "#696969") +
+  geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
   geom_histogram(data = mbeta, aes(x = value), binwidth = 0.003) +
-  geom_point(data = mbeta_truth, aes(x = value, y = 0), size = 4, shape = 1) +
-  geom_point(data = beta_master, aes(x = value, y = 0), size = 4, shape = 2) +
+  geom_vline(data = mbeta_truth, aes(xintercept = value, y = 0), col = "#696969", size = 0.5, linetype = 1) +
+  geom_vline(data = beta_master, aes(xintercept = value, y = 0), col = "#696969", size = 0.5, linetype = 2) +
+  scale_y_continuous(expand = c(0, 0)) +
   coord_flip() +
-  facet_grid(. ~ v)
+  facet_grid(. ~ v) +
+  theme(
+    panel.spacing = unit(0, "line")
+  )
 
 ## ---- tours ----
 projs <- combn(exper$model$V, 3)
@@ -171,28 +175,22 @@ for (i in seq_len(R)) {
   mbeta[cur_ix, "k"] <- mbeta[cur_ix[pi], "k"]
 }
 
+mbeta_truth$k <- rep(c(2, 1), 10)
+
 ## ---- visualize-aligned ----
 ggplot() +
-  geom_hline(yintercept = 0, size = 0.5, col = "#696969") +
-  geom_histogram(data = mbeta, aes(x = value, fill = as.factor(k)),
-                 binwidth = 0.003, alpha = 0.8, position = "identity") +
-  geom_point(data = mbeta_truth, aes(x = value, y = 0), size = 4, shape = 1) +
-  geom_point(data = beta_master, aes(x = value, y = 0), size = 4, shape = 2) +
-  scale_fill_brewer(palette = "Set2") +
-  coord_flip() +
-  facet_grid(. ~ v)
-
-
-ggplot() +
+  geom_vline(data = mbeta_truth, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 1) +
+  geom_vline(data = beta_master, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 2) +
   geom_histogram(data = mbeta,
                  aes(x = value, fill = as.factor(k)),
                  binwidth = .003, alpha = 0.8, position = "identity") +
-  geom_vline(data = mbeta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
-  geom_vline(data = beta_master, aes(xintercept = value), linetype = 2, col = "#696969") +
+  geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
   scale_fill_brewer(palette = "Set2") +
-  facet_wrap(~v) +
+  scale_color_brewer(palette = "Set2") +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_flip() +
+  facet_grid(. ~ v) +
   theme(
-    panel.border = element_rect(fill = "transparent", size = 0.4),
     panel.spacing = unit(0, "line")
   )
 
@@ -222,6 +220,7 @@ ggplot() +
   geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
   geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
   scale_fill_brewer(palette = "Set2") +
+  ylim(0, 150) +
   facet_wrap(~n) +
   theme(
     panel.border = element_rect(fill = "transparent", size = 0.4),
@@ -231,3 +230,18 @@ ggplot() +
 ## ---- vb-samples ----
 theta_samples <- file.path(output_dir, "theta_master_samples.feather") %>%
   read_feather()
+
+colnames(theta_samples) <- c("rep", "n", "k", "theta")
+
+ggplot() +
+  geom_histogram(data = theta_samples, aes(x = theta, fill = as.factor(k)),
+                 binwidth = 0.01, alpha = 0.8, position = "identity") +
+  geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+  geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
+  scale_fill_brewer(palette = "Set2") +
+  ylim(0, 150) +
+  facet_wrap(~n) +
+  theme(
+    panel.border = element_rect(fill = "transparent", size = 0.4),
+    panel.spacing = unit(0, "line")
+  )
