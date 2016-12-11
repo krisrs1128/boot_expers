@@ -97,3 +97,125 @@ match_matrix <- function(X, Z) {
 
   pi_result
 }
+
+#' Identify permutations to match multiple matrices with a preset one
+#'
+#' This is a wrapper of match_matrix that aligns a large collection of
+#' melted matrices (Xs) to one preset one (Z).
+#'
+#' @param Xs [data.frame] A collection of melted matrices. The
+#'   required columns are,
+#'    rep: which matrix replicate is it?
+#'    row: What row in the current matrix is it? This is what we will
+#'     permutate.
+#'    col: What column in the current matrix is it?
+#' @param Z [matrix] This is the matrix to which we want to align
+#'   the X matrices with.
+#' @return Xs [data.frame] A version of X with the "row" column
+#'   permuted so that rows align with the rows of Z
+match_matrices <- function(Xs, Z) {
+  R <- max(Xs$rep)
+
+  for (i in seq_len(R)) {
+    if (i %% 50 == 0) {
+      cat(sprintf("aligning replicate %d\n", i))
+    }
+
+    cur_ix <- which(Xs$rep == i)
+    cur_x <- Xs[cur_ix, ] %>%
+      dcast(row ~ col, value.var = "value") %>%
+      select(-row)
+
+    pi <- match_matrix(cur_x, Z)
+    Xs[cur_ix, "row"] <- Xs[cur_ix[pi], "row"]
+  }
+  Xs
+}
+
+#' Plot many samples from theta
+#'
+#' Whether we are looking at bootstrap, gibbs, or variational bayes
+#' posterior samples, we need to be able to plot the different sampled
+#' thetas by document x cluster. This abstracts away that plot.
+#'
+#' @param plot_data [list] A list of data.frames containing
+#'   information to plot. Contains the following slots:
+#'     $samples [data.frame] Data frame of all the sampled thetas, across
+#'       replicates. These will be displayed as a histogram, for each
+#'       document / cluster combination.
+#'     $truth [data.frame] The true theta values to display, as a
+#'       reference.
+#'     $fit [data.frame] The posterior mean, as a reference.
+#' @param aligned [bool] If the data have been aligned, we will shade in
+#'   colors accoridng to the cluster component. Otherwise, we will leave
+#'   black.
+#' @return p [ggplot] The ggplot object used to compare the sampled
+#'   and true thetas.
+theta_plot <- function(plot_data, aligned = FALSE) {
+  if (aligned) {
+    hist_aes <- aes(x = theta, fill = as.factor(k))
+  } else {
+    hist_aes <- aes(x = theta)
+  }
+
+  p <- ggplot() +
+    geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.01,
+                   position = "identity", alpha = 0.8) +
+    geom_vline(data = plot_data$truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+    facet_wrap(~n) +
+    scale_fill_brewer(palette = "Set2") +
+    theme(
+      panel.border = element_rect(fill = "transparent", size = 0.4),
+      panel.spacing = unit(0, "line")
+    )
+
+  if (!is.null(plot_data$fit)) {
+    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = theta), linetype = 2, col = "#696969")
+  }
+
+  p
+}
+
+#' Plot many samples from beta
+#'
+#' Whether we are looking at bootstrap, gibbs, or variational bayes
+#' posterior samples, we need to be able to plot the different sampled
+#' betas by document x cluster. This abstracts away that plot.
+#'
+#' @param plot_data [list] A list of data.frames containing
+#'   information to plot. Contains the following slots:
+#'     $samples [data.frame] Data frame of all the sampled betas, across
+#'       replicates. These will be displayed as a histogram, for each
+#'       document / cluster combination.
+#'     $truth [data.frame] The true beta values to display, as a
+#'       reference.
+#'     $fit [data.frame] The posterior mean, as a reference.
+#' @param aligned [bool] If the data have been aligned, we will shade in
+#'   colors accoridng to the cluster component. Otherwise, we will leave
+#'   black.
+#' @return p [ggplot] The ggplot object used to compare the sampled
+#'   and true betas.
+beta_plot <- function(plot_data, aligned = FALSE) {
+  if (aligned) {
+    hist_aes <- aes(x = value, fill = as.factor(k))
+  } else {
+    hist_aes <- aes(x = value)
+  }
+
+  p <- ggplot() +
+    geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.003,
+                   position = "identity", alpha = 0.8) +
+    geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
+    geom_vline(data = plot_data$truth, aes(xintercept = value), col = "#696969", size = 0.5, linetype = 1) +
+    scale_y_continuous(expand = c(0, 0)) +
+    coord_flip() +
+    facet_grid(. ~ v) +
+    scale_fill_brewer(palette = "Set2") +
+    theme(panel.spacing = unit(0, "line"))
+
+  if (!is.null(plot_data$fit)) {
+    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value),
+                        size = 0.5, linetype = 2, col = "#696969")
+  }
+  p
+}

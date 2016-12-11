@@ -52,6 +52,6 @@ for (i in seq(start_ix, end_ix)) {
   )
 
   fit <- fit_model(stan_data, stan_file)
-  write_feather(fit$beta_hat, output_path(output_dir)(paste0("beta_hat_", i, ".feather")))
-  write_feather(fit$theta_hat, output_path(output_dir)(paste0("theta_hat_", i, ".feather")))
+  write_feather(fit$beta_hat, output_path(output_dir)(paste0("beta_boot_", i, ".feather")))
+  write_feather(fit$theta_hat, output_path(output_dir)(paste0("theta_boot_", i, ".feather")))
 }
