@@ -4,6 +4,7 @@
     "params_dir": "params/",
     "data_dir": "data/",
     "output_dir": "output/",
+    "plot_dir": "plot/",
     "tmp_dir": "tmp/"
   },
   "model": {
