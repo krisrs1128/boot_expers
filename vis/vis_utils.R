@@ -132,6 +132,25 @@ match_matrices <- function(Xs, Z) {
   Xs
 }
 
+#' Plot many samples from theta
+#'
+#' Whether we are looking at bootstrap, gibbs, or variational bayes
+#' posterior samples, we need to be able to plot the different sampled
+#' thetas by document x cluster. This abstracts away that plot.
+#'
+#' @param plot_data [list] A list of data.frames containing
+#'   information to plot. Contains the following slots:
+#'     $samples [data.frame] Data frame of all the sampled thetas, across
+#'       replicates. These will be displayed as a histogram, for each
+#'       document / cluster combination.
+#'     $truth [data.frame] The true theta values to display, as a
+#'       reference.
+#'     $fit [data.frame] The posterior mean, as a reference.
+#' @param aligned [bool] If the data have been aligned, we will shade in
+#'   colors accoridng to the cluster component. Otherwise, we will leave
+#'   black.
+#' @return p [ggplot] The ggplot object used to compare the sampled
+#'   and true thetas.
 theta_plot <- function(plot_data, aligned = FALSE) {
   if (aligned) {
     hist_aes <- aes(x = theta, fill = as.factor(k))
@@ -157,8 +176,25 @@ theta_plot <- function(plot_data, aligned = FALSE) {
   p
 }
 
-
-
+#' Plot many samples from beta
+#'
+#' Whether we are looking at bootstrap, gibbs, or variational bayes
+#' posterior samples, we need to be able to plot the different sampled
+#' betas by document x cluster. This abstracts away that plot.
+#'
+#' @param plot_data [list] A list of data.frames containing
+#'   information to plot. Contains the following slots:
+#'     $samples [data.frame] Data frame of all the sampled betas, across
+#'       replicates. These will be displayed as a histogram, for each
+#'       document / cluster combination.
+#'     $truth [data.frame] The true beta values to display, as a
+#'       reference.
+#'     $fit [data.frame] The posterior mean, as a reference.
+#' @param aligned [bool] If the data have been aligned, we will shade in
+#'   colors accoridng to the cluster component. Otherwise, we will leave
+#'   black.
+#' @return p [ggplot] The ggplot object used to compare the sampled
+#'   and true betas.
 beta_plot <- function(plot_data, aligned = FALSE) {
   if (aligned) {
     hist_aes <- aes(x = value, fill = as.factor(k))
