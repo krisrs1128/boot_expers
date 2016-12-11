@@ -48,7 +48,7 @@ generate_data <- function(N, theta, beta) {
 fit_model <- function(stan_data, stan_file, keep_samples = FALSE,
                       use_vb = TRUE) {
   # fit model
-  if (vb) {
+  if (use_vb) {
     m <- stan_model(file = stan_file)
     stan_fit <- vb(m, stan_data)
   } else {

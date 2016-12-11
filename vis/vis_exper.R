@@ -35,11 +35,11 @@ exper <- fromJSON("expers/exper_d100_n100.json")
 paths <- exper$paths
 output_dir <- file.path(paths$base, paths$output_dir)
 beta <- output_dir %>%
-  list.files("beta_hat_[0-9]+", full.names = TRUE) %>%
+  list.files("beta_boot_[0-9]+", full.names = TRUE) %>%
   combine_replicates()
 colnames(beta)[3] <- "k"
 theta <- output_dir %>%
-  list.files("theta_hat_[0-9]+", full.names = TRUE) %>%
+  list.files("theta_boot_[0-9]+", full.names = TRUE) %>%
   combine_replicates()
 
 ## ---- theta-benchmarks ----
@@ -50,7 +50,7 @@ theta_truth <- theta_truth %>%
   melt(measure.vars = c("V1", "V2"), variable.name = "k")
 
 theta_master <- output_dir %>%
-  list.files("theta_hat_master", full.names = TRUE) %>%
+  list.files("theta_hat_vb", full.names = TRUE) %>%
   read_feather()
 
 ## ---- beta-benchmarks ----
@@ -62,7 +62,7 @@ mbeta_truth <- beta_truth %>%
 mbeta_truth$v <- gsub("V", "", mbeta_truth$v)
 
 beta_master <- output_dir %>%
-  list.files("beta_hat_master", full.names = TRUE) %>%
+  list.files("beta_hat_vb", full.names = TRUE) %>%
   read_feather()
 colnames(beta_master)[1] <- "k"
 beta_master <- beta_master %>%
@@ -228,7 +228,7 @@ ggplot() +
   )
 
 ## ---- vb-samples-theta ----
-theta_samples <- file.path(output_dir, "theta_master_samples.feather") %>%
+theta_samples <- file.path(output_dir, "theta_samples_vb.feather") %>%
   read_feather()
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
 
@@ -246,7 +246,7 @@ ggplot() +
   )
 
 ## ---- vb-samples-beta ----
-beta_samples <- file.path(output_dir, "beta_master_samples.feather") %>%
+beta_samples <- file.path(output_dir, "beta_samples_vb.feather") %>%
   read_feather()
 colnames(beta_samples) <- c("rep", "k", "v", "value")
 
