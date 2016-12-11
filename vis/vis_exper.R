@@ -161,19 +161,10 @@ beta_master_mat <- beta_master %>%
   select(-k) %>%
   as.matrix()
 
-for (i in seq_len(R)) {
-  if (i %% 20 == 0) {
-    cat(sprintf("aligning replicate %d\n", i))
-  }
-
-  cur_ix <- which(mbeta$rep == i)
-  cur_beta <- mbeta[cur_ix, ] %>%
-    dcast(k ~ v) %>%
-    select(-k)
-
-  pi <- match_matrix(beta_master_mat, cur_beta)
-  mbeta[cur_ix, "k"] <- mbeta[cur_ix[pi], "k"]
-}
+old_names <- colnames(mbeta)
+colnames(mbeta) <- c("file", "rep", "row", "col", "value")
+mbeta <- match_matrices(mbeta, beta_master_mat)
+colnames(mbeta) <- old_names
 
 mbeta_truth$k <- rep(c(2, 1), 10)
 
@@ -200,19 +191,10 @@ theta_master_mat <- theta_master %>%
   select(-k) %>%
   as.matrix()
 
-for (i in seq_len(R)) {
-  if (i %% 20 == 0) {
-    cat(sprintf("aligning replicate %d\n", i))
-  }
-
-  cur_ix <- which(theta$rep == i)
-  cur_theta <- theta[cur_ix, ] %>%
-    dcast(k ~ n, value.var = "theta") %>%
-    select(-k)
-
-  pi <- match_matrix(theta_master_mat, cur_theta)
-  theta[cur_ix, "k"] <- theta[cur_ix[pi], "k"]
-}
+old_names <- colnames(theta)
+colnames(theta) <- c("file", "rep", "col", "row", "value")
+theta <- match_matrices(theta, theta_master_mat)
+colnames(theta) <- old_names
 
 ggplot() +
   geom_histogram(data = theta, aes(x = theta, fill = as.factor(k)),
@@ -236,7 +218,6 @@ ggplot() +
   geom_histogram(data = theta_samples, aes(x = theta, fill = as.factor(k)),
                  binwidth = 0.01, alpha = 0.8, position = "identity") +
   geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
-  geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
   scale_fill_brewer(palette = "Set2") +
   scale_y_continuous(limits = c(0, 150) , oob = scales::rescale_none) +
   facet_wrap(~n) +
@@ -254,7 +235,29 @@ beta_samples$v <- factor(beta_samples$v, levels = v_order)
 
 ggplot() +
   geom_vline(data = mbeta_truth, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 1) +
-  geom_vline(data = beta_master, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 2) +
+  geom_histogram(data = beta_samples,
+                 aes(x = value, fill = as.factor(k)),
+                 binwidth = .003, alpha = 0.8, position = "identity") +
+  geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_flip() +
+  facet_grid(. ~ v) +
+  theme(
+    panel.spacing = unit(0, "line")
+  )
+
+## ---- gibbs-samples-beta ----
+beta_samples <- file.path(output_dir, "beta_samples_gibbs.feather") %>%
+  read_feather()
+colnames(beta_samples) <- c("rep", "row", "col", "value")
+beta_samples <- match_matrices(beta_samples, beta_master_mat)
+colnames(beta_samples) <- c("rep", "k", "v", "value")
+beta_samples$v <- factor(beta_samples$v, levels = v_order)
+
+ggplot() +
+  geom_vline(data = mbeta_truth, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 1) +
   geom_histogram(data = beta_samples,
                  aes(x = value, fill = as.factor(k)),
                  binwidth = .003, alpha = 0.8, position = "identity") +
