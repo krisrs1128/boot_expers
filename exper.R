@@ -19,7 +19,7 @@ for (f in list.files("src", ".R", full.names = TRUE)) {
   source(f)
 }
 exper <- fromJSON(args[[1]])
-set.seed(121120161209)
+set.seed(12112016)
 
 ## ---- setup-directories ----
 paths <- exper$paths

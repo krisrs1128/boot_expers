@@ -252,7 +252,12 @@ ggplot() +
 beta_samples <- file.path(output_dir, "beta_samples_gibbs.feather") %>%
   read_feather()
 colnames(beta_samples) <- c("rep", "row", "col", "value")
-beta_samples <- match_matrices(beta_samples, beta_master_mat)
+beta_samples <- match_matrices(
+  beta_samples,
+  beta_truth %>%
+    select(-k) %>%
+    as.matrix()
+)
 colnames(beta_samples) <- c("rep", "k", "v", "value")
 beta_samples$v <- factor(beta_samples$v, levels = v_order)
 
@@ -268,5 +273,29 @@ ggplot() +
   coord_flip() +
   facet_grid(. ~ v) +
   theme(
+    panel.spacing = unit(0, "line")
+  )
+
+## ---- gibbs-samples-thtea ----
+theta_samples <- file.path(output_dir, "theta_samples_gibbs.feather") %>%
+  read_feather()
+colnames(theta_samples) <- c("rep", "row", "col", "value")
+theta_samples <- match_matrices(
+  theta_samples,
+  theta_truth %>%
+    dcast(n ~ k) %>%
+    select(-n) %>%
+    as.matrix()
+)
+
+ggplot() +
+  geom_histogram(data = theta_samples, aes(x = theta, fill = as.factor(k)),
+                 binwidth = 0.01, alpha = 0.8, position = "identity") +
+  geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_y_continuous(limits = c(0, 150) , oob = scales::rescale_none) +
+  facet_wrap(~n) +
+  theme(
+    panel.border = element_rect(fill = "transparent", size = 0.4),
     panel.spacing = unit(0, "line")
   )
