@@ -63,7 +63,7 @@ create_job <- function(outfile, jobname, script_lines, opts = list()) {
     sprintf("#SBATCH --output=%s.out", jobname),
     "#################",
     "# a file for errors from the job",
-    sprintf("#SBATCH --error=%s.err", jobname),
+    sprintf("#SBATCH --error=/scratch/users/kriss1/batch/%s.err", jobname),
     "#################",
     "#time you think you need; default is one hour",
     "#in minutes in this case, hh:mm:ss",
