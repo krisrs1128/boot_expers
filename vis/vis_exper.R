@@ -220,17 +220,16 @@ ggplot() +
   geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
   geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
   scale_fill_brewer(palette = "Set2") +
-  ylim(0, 150) +
+  scale_y_continuous(limits = c(0, 150) , oob = rescale_none) +
   facet_wrap(~n) +
   theme(
     panel.border = element_rect(fill = "transparent", size = 0.4),
     panel.spacing = unit(0, "line")
   )
 
-## ---- vb-samples ----
+## ---- vb-samples-theta ----
 theta_samples <- file.path(output_dir, "theta_master_samples.feather") %>%
   read_feather()
-
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
 
 ggplot() +
@@ -239,9 +238,32 @@ ggplot() +
   geom_vline(data = theta_truth, aes(xintercept = value), linetype = 1, col = "#696969") +
   geom_vline(data = theta_master, aes(xintercept = theta), linetype = 2, col = "#696969") +
   scale_fill_brewer(palette = "Set2") +
-  ylim(0, 150) +
+  scale_y_continuous(limits = c(0, 150) , oob = scales::rescale_none) +
   facet_wrap(~n) +
   theme(
     panel.border = element_rect(fill = "transparent", size = 0.4),
+    panel.spacing = unit(0, "line")
+  )
+
+## ---- vb-samples-beta ----
+beta_samples <- file.path(output_dir, "beta_master_samples.feather") %>%
+  read_feather()
+colnames(beta_samples) <- c("rep", "k", "v", "value")
+
+beta_samples$v <- factor(beta_samples$v, levels = v_order)
+
+ggplot() +
+  geom_vline(data = mbeta_truth, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 1) +
+  geom_vline(data = beta_master, aes(xintercept = value, y = 0, col = as.factor(k)), size = 0.5, linetype = 2) +
+  geom_histogram(data = beta_samples,
+                 aes(x = value, fill = as.factor(k)),
+                 binwidth = .003, alpha = 0.8, position = "identity") +
+  geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_flip() +
+  facet_grid(. ~ v) +
+  theme(
     panel.spacing = unit(0, "line")
   )
