@@ -31,6 +31,7 @@ dir.create(paths$base)
 dir.create(file.path(paths$base, paths$params_dir))
 dir.create(file.path(paths$base, paths$data_dir))
 dir.create(file.path(paths$base, paths$output_dir))
+dir.create(file.path(paths$base, paths$plot_dir))
 dir.create(file.path(paths$base, paths$tmp_dir))
 
 ## ---- generate-data ----
