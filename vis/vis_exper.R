@@ -82,7 +82,7 @@ beta_fit <- beta_fit %>%
   select(-Var2) %>%
   melt(id.vars = "k", variable.name = "v")
 
-## ---- vis-beta ----
+## ---- process-beta ----
 mbeta <- beta %>%
   melt(
     id.vars = c("file", "rep", "k"),
@@ -99,6 +99,18 @@ v_order <- mbeta %>%
 mbeta$v <- factor(mbeta$v, levels = v_order)
 mbeta_truth$v <- factor(mbeta_truth$v, levels = v_order)
 beta_fit$v <- factor(beta_fit$v, levels = v_order)
+
+## ---- process-theta ----
+n_order <- theta_truth %>%
+  group_by(n) %>%
+  summarise(entropy = -mean(value * log(value))) %>%
+  arrange(entropy) %>%
+  select(n) %>%
+  unlist()
+
+theta$n <- factor(theta$n, levels = n_order)
+theta_truth$n <- factor(theta_truth$n, levels = n_order)
+theta_fit$n <- factor(theta_fit$n, levels = n_order)
 
 ## ---- alignment-approach ----
 R <- max(mbeta$rep)
