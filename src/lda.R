@@ -46,13 +46,13 @@ generate_data <- function(N, theta, beta) {
 #' @importFrom dplyr group_by summarise
 #' @importFrom data.table data.table
 fit_model <- function(stan_data, stan_file, keep_samples = FALSE,
-                      use_vb = TRUE) {
+                      use_vb = TRUE, ...) {
   # fit model
   if (use_vb) {
     m <- stan_model(file = stan_file)
-    stan_fit <- vb(m, stan_data)
+    stan_fit <- vb(m, stan_data, ...)
   } else {
-    stan_fit <- stan(stan_file, data = stan_data)
+    stan_fit <- stan(stan_file, data = stan_data, ...)
   }
 
   # get samples

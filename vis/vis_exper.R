@@ -13,7 +13,6 @@
 
 ## ---- setup ----
 args <- commandArgs(trailingOnly=TRUE) # give paths for experiment json
-args <- list("/scratch/users/kriss1/working/boot_expers/expers/exper_d100_n100.json")
 library("jsonlite")
 library("feather")
 library("plyr")
@@ -65,6 +64,7 @@ theta_fit <- output_dir %>%
   list.files("theta_hat_vb", full.names = TRUE) %>%
   read_feather()
 
+# align fitted and true theta clusters
 pi <- match_matrix(
   theta_fit %>%
     dcast(k ~ n) %>%
@@ -88,7 +88,6 @@ beta_fit <- output_dir %>%
 beta_truth <- file.path(paths$base, paths$params, "beta.feather") %>%
   read_feather()
 
-# align beta truth and fit
 pi <- match_matrix(
   beta_fit %>%
     select(-Var2) %>%
@@ -144,7 +143,7 @@ beta_fit_mat <- beta_fit %>%
   select(-k) %>%
   as.matrix()
 
-pi <- match_matrices(mbeta[, c("rep", "k", "v", "value")], beta_fit_mat)
+pi <- match_matrices(mbeta[, -1], beta_fit_mat)
 mbeta$k <- pi$pi_row
 
 ## ---- visualize-aligned ----
@@ -155,14 +154,12 @@ beta_plot(
   ggsave(file = file.path(plot_dir, "beta_aligned.pdf"))
 
 ## ---- align-theta ----
-theta_old <- theta
-for (i in seq_len(R)) {
-  print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), "pi_row"] %>% unlist()
-  for (j in seq_along(cur_pi)) {
-    theta[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
-  }
-}
+theta <- pi %>%
+  mutate(k = row) %>%
+  select(-row, -pi_ix) %>%
+  right_join(theta) %>%
+  mutate(k = pi_row) %>%
+  select(-pi_row)
 
 theta_plot(
   list("samples" = theta, "truth" = theta_truth, "fit" = theta_fit),
@@ -198,15 +195,12 @@ theta_samples <- file.path(output_dir, "theta_samples_vb.feather") %>%
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
 theta_samples$n <- factor(theta_samples$n, levels = n_order)
 
-theta_old <- theta_samples
-for (i in seq_len(R)) {
-  print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), c("row", "pi_row")] %>%
-    arrange(row)
-  for (j in seq_len(nrow(cur_pi))) {
-    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j, "pi_row"]
-  }
-}
+theta_samples <- pi %>%
+  mutate(k = row) %>%
+  select(-row, -pi_ix) %>%
+  right_join(theta_samples) %>%
+  mutate(k = pi_row) %>%
+  select(-pi_row)
 
 theta_plot(
   list("samples" = theta_samples, "truth" = theta_truth),
@@ -241,15 +235,12 @@ theta_samples <- file.path(output_dir, "theta_samples_gibbs.feather") %>%
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
 theta_samples$n <- factor(theta_samples$n, levels = n_order)
 
-theta_old <- theta_samples
-for (i in seq_len(R)) {
-  print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), c("row", "pi_row")] %>%
-    arrange(row)
-  for (j in seq_len(nrow(cur_pi))) {
-    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j, "pi_row"]
-  }
-}
+theta_samples <- pi %>%
+  mutate(k = row) %>%
+  select(-row, -pi_ix) %>%
+  right_join(theta_samples) %>%
+  mutate(k = pi_row) %>%
+  select(-pi_row)
 
 theta_plot(
   list("samples" = theta_samples, "truth" = theta_truth),

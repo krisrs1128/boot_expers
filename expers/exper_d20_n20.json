@@ -13,10 +13,11 @@
     "N": 20,
     "D": 20,
     "V": 10,
-    "K": 2
+    "K": 2,
+    "output_samples": 4000
   },
   "parallel": {
-    "replicates": 1000,
+    "replicates": 4000,
     "batches": 10,
     "basename": "lda_small_d_small_n",
     "partitions": "hns,normal",
