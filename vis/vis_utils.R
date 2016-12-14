@@ -14,6 +14,8 @@ combine_replicates <- function(files) {
 
   data <- list()
   for (i in seq_along(files)) {
+    print_skip(i)
+
     data[[i]] <- cbind(
       file = files[i],
       rep = i,
@@ -105,21 +107,20 @@ match_matrix <- function(X, Z) {
 #'
 #' @param Xs [data.frame] A collection of melted matrices. The
 #'   required columns are,
-#'    rep: which matrix replicate is it?
-#'    row: What row in the current matrix is it? This is what we will
-#'     permutate.
-#'    col: What column in the current matrix is it?
-#' @param Z [matrix] This is the matrix to which we want to align
-#'   the X matrices with.
-#' @return Xs [data.frame] A version of X with the "row" column
-#'   permuted so that rows align with the rows of Z
+#'     rep: which matrix replicate is it?
+#'     row: What row in the current matrix is it? This is what we will
+#'       permute.  col: What column in the current matrix is it?
+#' @param Z [matrix] This is the matrix to which we want to align the
+#'   X matrices with.
+#' @return pi_all [data.frame] The data.frame that specifies how to
+#'   permutate rows within each replicate, so that the rows match
+#'  as well as possible.
 match_matrices <- function(Xs, Z) {
+  colnames(Xs) <- c("rep", "row", "col", "value")
   R <- max(Xs$rep)
 
   for (i in seq_len(R)) {
-    if (i %% 50 == 0) {
-      cat(sprintf("aligning replicate %d\n", i))
-    }
+    print_skip(i)
 
     cur_ix <- which(Xs$rep == i)
     cur_x <- Xs[cur_ix, ] %>%
@@ -127,9 +128,10 @@ match_matrices <- function(Xs, Z) {
       select(-row)
 
     pi <- match_matrix(cur_x, Z)
-    Xs[cur_ix, "row"] <- Xs[cur_ix[pi], "row"]
+    Xs[cur_ix, "pi_ix"] <- cur_ix[pi]
+    Xs[cur_ix, "pi_row"] <- Xs[cur_ix[pi], "row"]
   }
-  Xs
+  unique(Xs[, c("rep", "row", "pi_row", "pi_ix")])
 }
 
 #' Plot many samples from theta
@@ -218,4 +220,10 @@ beta_plot <- function(plot_data, aligned = FALSE) {
                         size = 0.5, linetype = 2, col = "#696969")
   }
   p
+}
+
+print_skip <- function(i, p = 50) {
+  if (i %% p == 0) {
+    cat(sprintf("aligning replicate %d\n", i))
+  }
 }

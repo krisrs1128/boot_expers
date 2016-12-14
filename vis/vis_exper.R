@@ -156,11 +156,8 @@ beta_fit_mat <- beta_fit %>%
   select(-k) %>%
   as.matrix()
 
-old_names <- colnames(mbeta)
-colnames(mbeta) <- c("file", "rep", "row", "col", "value")
-mbeta <- match_matrices(mbeta, beta_fit_mat)
-colnames(mbeta) <- old_names
-mbeta_truth$k <- rep(c(2, 1), 10)
+pi <- match_matrices(mbeta[, c("rep", "k", "v", "value")], beta_fit_mat)
+mbeta$k <- pi$pi_row
 
 ## ---- visualize-aligned ----
 beta_plot(
@@ -170,15 +167,15 @@ beta_plot(
   ggsave(file = file.path(plot_dir, "beta_aligned.pdf"))
 
 ## ---- align-theta ----
-theta_fit_mat <- theta_fit %>%
-  dcast(k ~ n) %>%
-  select(-k) %>%
-  as.matrix()
+theta_save <- theta
 
-old_names <- colnames(theta)
-colnames(theta) <- c("file", "rep", "col", "row", "value")
-theta <- match_matrices(theta, theta_fit_mat)
-colnames(theta) <- old_names
+for (i in seq_len(R)) {
+  print_skip(i)
+  cur_pi <- pi[which(pi$rep == i), "pi_row"]
+  for (j in seq_along(cur_pi)) {
+    theta[which(theta$rep == i & theta$k == j), "k"] <- cur_pi[j]
+  }
+}
 
 theta_plot(
   list("samples" = theta, "truth" = theta_truth, "fit" = theta_fit),
@@ -213,14 +210,15 @@ beta_plot(
 ## ---- gibbs-samples-beta ----
 beta_samples <- file.path(output_dir, "beta_samples_gibbs.feather") %>%
   read_feather()
-colnames(beta_samples) <- c("rep", "row", "col", "value")
-beta_samples <- match_matrices(
+colnames(beta_samples) <- c("rep", "k", "v", "value")
+pi <- match_matrices(
   beta_samples,
   beta_truth %>%
     select(-k) %>%
     as.matrix()
 )
-colnames(beta_samples) <- c("rep", "k", "v", "value")
+
+beta_samples$k <- pi$pi_row
 beta_samples$v <- factor(beta_samples$v, levels = v_order)
 
 beta_plot(
@@ -232,15 +230,15 @@ beta_plot(
 ## ---- gibbs-samples-thtea ----
 theta_samples <- file.path(output_dir, "theta_samples_gibbs.feather") %>%
   read_feather()
-colnames(theta_samples) <- c("rep", "row", "col", "value")
-theta_samples <- match_matrices(
-  theta_samples,
-  theta_truth %>%
-    dcast(n ~ k) %>%
-    select(-n) %>%
-    as.matrix()
-)
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
+
+for (i in seq_len(R)) {
+  print_skip(i)
+  cur_pi <- pi[which(pi$rep == i), "pi_row"]
+  for (j in seq_along(cur_pi)) {
+    theta_samples[which(theta_samples$rep == i & theta_samples$k == j), "k"] <- cur_pi[j]
+  }
+}
 
 theta_plot(
   list("samples" = theta_samples, "truth" = theta_truth),
