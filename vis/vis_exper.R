@@ -39,7 +39,6 @@ min_theme <- theme_update(
 
 source("vis/vis_utils.R")
 exper <- fromJSON(args[[1]])
-exper <- fromJSON("/scratch/users/kriss1/working/boot_expers/expers/exper_d20_n20.json")
 
 ## ---- read-output ----
 paths <- exper$paths
@@ -199,7 +198,7 @@ theta_samples$n <- factor(theta_samples$n, levels = n_order)
 theta_samples <- pi %>%
   mutate(k = row) %>%
   select(-row, -pi_ix) %>%
-  right_join(theta) %>%
+  right_join(theta_samples) %>%
   mutate(k = pi_row) %>%
   select(-pi_row)
 
@@ -239,7 +238,7 @@ theta_samples$n <- factor(theta_samples$n, levels = n_order)
 theta_samples <- pi %>%
   mutate(k = row) %>%
   select(-row, -pi_ix) %>%
-  right_join(theta) %>%
+  right_join(theta_samples) %>%
   mutate(k = pi_row) %>%
   select(-pi_row)
 
