@@ -14,6 +14,8 @@ combine_replicates <- function(files) {
 
   data <- list()
   for (i in seq_along(files)) {
+    print_skip(i)
+
     data[[i]] <- cbind(
       file = files[i],
       rep = i,
@@ -33,18 +35,16 @@ combine_replicates <- function(files) {
 #' @return ggtern [ggtern object] A ggtern plot object of the points
 #'   on the specified
 simplex_proj <- function(p, coords) {
-  mp <- p[, coords] %>%
-    melt() %>%
-    dcast(Var1 ~ Var2) %>%
-    select(-Var1)
-  colnames(mp) <- paste0("dim_", colnames(mp))
-  dims <- colnames(mp)
+  coords <- paste0("dim_", coords)
+  colnames(p) <- paste0("dim_", colnames(p))
 
-  ggtern(mp) +
-    geom_point(aes_string(x = dims[1], y = dims[2], z = dims[3])) +
+  ggtern(p) +
+    geom_point(aes_string(x = coords[1], y = coords[2], z = coords[3], col = "as.factor(dim_k)"),
+               size = .5, alpha = 0.5) +
+    scale_color_brewer(palette = "Set2") +
+    labs(col = "k") +
     theme_nogrid()
 }
-
 
 #' Identify a permutation that aligns rows of two matrices
 #'
@@ -105,21 +105,20 @@ match_matrix <- function(X, Z) {
 #'
 #' @param Xs [data.frame] A collection of melted matrices. The
 #'   required columns are,
-#'    rep: which matrix replicate is it?
-#'    row: What row in the current matrix is it? This is what we will
-#'     permutate.
-#'    col: What column in the current matrix is it?
-#' @param Z [matrix] This is the matrix to which we want to align
-#'   the X matrices with.
-#' @return Xs [data.frame] A version of X with the "row" column
-#'   permuted so that rows align with the rows of Z
+#'     rep: which matrix replicate is it?
+#'     row: What row in the current matrix is it? This is what we will
+#'       permute.  col: What column in the current matrix is it?
+#' @param Z [matrix] This is the matrix to which we want to align the
+#'   X matrices with.
+#' @return pi_all [data.frame] The data.frame that specifies how to
+#'   permutate rows within each replicate, so that the rows match
+#'  as well as possible.
 match_matrices <- function(Xs, Z) {
+  colnames(Xs) <- c("rep", "row", "col", "value")
   R <- max(Xs$rep)
 
   for (i in seq_len(R)) {
-    if (i %% 50 == 0) {
-      cat(sprintf("aligning replicate %d\n", i))
-    }
+    print_skip(i)
 
     cur_ix <- which(Xs$rep == i)
     cur_x <- Xs[cur_ix, ] %>%
@@ -127,9 +126,10 @@ match_matrices <- function(Xs, Z) {
       select(-row)
 
     pi <- match_matrix(cur_x, Z)
-    Xs[cur_ix, "row"] <- Xs[cur_ix[pi], "row"]
+    Xs[cur_ix, "pi_ix"] <- cur_ix[pi]
+    Xs[cur_ix, "pi_row"] <- Xs[cur_ix[pi], "row"]
   }
-  Xs
+  unique(Xs[, c("rep", "row", "pi_row", "pi_ix")])
 }
 
 #' Plot many samples from theta
@@ -152,28 +152,28 @@ match_matrices <- function(Xs, Z) {
 #' @return p [ggplot] The ggplot object used to compare the sampled
 #'   and true thetas.
 theta_plot <- function(plot_data, aligned = FALSE) {
-  if (aligned) {
-    hist_aes <- aes(x = theta, fill = as.factor(k))
-  } else {
-    hist_aes <- aes(x = theta)
-  }
-
   p <- ggplot() +
-    geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.01,
-                   position = "identity", alpha = 0.8) +
-    geom_vline(data = plot_data$truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+    geom_histogram(data = plot_data$samples, aes(x = theta, fill = as.factor(k)),
+                   binwidth = 0.01, position = "identity", alpha = 0.8) +
+    geom_vline(data = plot_data$truth,
+               aes(xintercept = theta, col = as.factor(k)),
+               linetype = 1) +
     facet_wrap(~n) +
     scale_fill_brewer(palette = "Set2") +
+    scale_color_brewer(palette = "Set2") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 2)) +
     theme(
       panel.border = element_rect(fill = "transparent", size = 0.4),
-      panel.spacing = unit(0, "line")
+      panel.spacing = unit(0, "line"),
+      axis.text.x = element_blank()
     )
 
   if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = theta), linetype = 2, col = "#696969")
+    p <- p + geom_vline(data = plot_data$fit,
+                        aes(xintercept = theta, col = as.factor(k)),
+                        linetype = 2)
   }
-
-  p
+  p + labs(fill = "k", col = "k")
 }
 
 #' Plot many samples from beta
@@ -196,26 +196,38 @@ theta_plot <- function(plot_data, aligned = FALSE) {
 #' @return p [ggplot] The ggplot object used to compare the sampled
 #'   and true betas.
 beta_plot <- function(plot_data, aligned = FALSE) {
-  if (aligned) {
-    hist_aes <- aes(x = value, fill = as.factor(k))
-  } else {
-    hist_aes <- aes(x = value)
-  }
-
   p <- ggplot() +
-    geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.003,
-                   position = "identity", alpha = 0.8) +
+    geom_histogram(data = plot_data$samples, aes(x = value, fill = as.factor(k)),
+                   binwidth = 0.003, position = "identity", alpha = 0.8) +
     geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
-    geom_vline(data = plot_data$truth, aes(xintercept = value), col = "#696969", size = 0.5, linetype = 1) +
-    scale_y_continuous(expand = c(0, 0)) +
+    geom_vline(data = plot_data$truth, aes(xintercept = value, col = as.factor(k)),
+             size = 0.5, linetype = 1) +
+    scale_y_continuous(expand = c(0, 0), breaks = scales::pretty_breaks(n = 2)) +
     coord_flip() +
     facet_grid(. ~ v) +
     scale_fill_brewer(palette = "Set2") +
-    theme(panel.spacing = unit(0, "line"))
+    scale_color_brewer(palette = "Set2") +
+    theme(
+      panel.spacing = unit(0, "line"),
+      axis.text.x = element_blank()
+    )
 
   if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value),
-                        size = 0.5, linetype = 2, col = "#696969")
+    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value, col = as.factor(k)),
+                        size = 0.5, linetype = 2)
   }
-  p
+  p + labs(fill = "k", col = "k")
+}
+
+#' Helper function, to print every p^th iteration
+#'
+#' This is just so we can track our progress in slow loops
+#'
+#' @param i [integer] The current iteration
+#' @param p [integer] If p divides i, then we print i
+#' @return NULL
+print_skip <- function(i, p = 50) {
+  if (i %% p == 0) {
+    cat(sprintf("processing replicate %d\n", i))
+  }
 }
