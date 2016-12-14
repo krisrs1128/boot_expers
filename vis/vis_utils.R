@@ -163,7 +163,8 @@ theta_plot <- function(plot_data, aligned = FALSE) {
     scale_color_brewer(palette = "Set2") +
     theme(
       panel.border = element_rect(fill = "transparent", size = 0.4),
-      panel.spacing = unit(0, "line")
+      panel.spacing = unit(0, "line"),
+      axis.text = element_blank()
     )
 
   if (!is.null(plot_data$fit)) {
@@ -205,7 +206,10 @@ beta_plot <- function(plot_data, aligned = FALSE) {
     facet_grid(. ~ v) +
     scale_fill_brewer(palette = "Set2") +
     scale_color_brewer(palette = "Set2") +
-    theme(panel.spacing = unit(0, "line"))
+    theme(
+      panel.spacing = unit(0, "line"),
+      axis.text.x = element_blank()
+    )
 
   if (!is.null(plot_data$fit)) {
     p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value, col = as.factor(k)),
