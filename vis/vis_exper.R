@@ -78,10 +78,6 @@ colnames(beta_fit)[1] <- "k"
 beta_fit <- beta_fit %>%
   melt(id.vars = "k", variable.name = "v")
 
-## ---- vis-theta ----
-theta_plot(list("samples" = theta, "truth" = theta_truth, "fit" = theta_fit)) %>%
-  ggsave(file = file.path(plot_dir, "theta_unaligned.pdf"), device = NULL)
-
 ## ---- vis-beta ----
 mbeta <- beta %>%
   melt(
@@ -102,6 +98,10 @@ beta_fit$v <- factor(beta_fit$v, levels = v_order)
 
 beta_plot(list("samples" = mbeta, "truth" = mbeta_truth, "fit" = beta_fit)) %>%
   ggsave(file = file.path(plot_dir, "beta_unaligned.pdf"), device = NULL)
+
+## ---- vis-theta ----
+theta_plot(list("samples" = theta, "truth" = theta_truth, "fit" = theta_fit)) %>%
+  ggsave(file = file.path(plot_dir, "theta_unaligned.pdf"), device = NULL)
 
 ## ---- tours ----
 projs <- combn(exper$model$V, 3)
@@ -167,8 +167,6 @@ beta_plot(
   ggsave(file = file.path(plot_dir, "beta_aligned.pdf"))
 
 ## ---- align-theta ----
-theta_save <- theta
-
 for (i in seq_len(R)) {
   print_skip(i)
   cur_pi <- pi[which(pi$rep == i), "pi_row"]
@@ -183,22 +181,20 @@ theta_plot(
 ) %>%
   ggsave(file = file.path(plot_dir, "theta_aligned.pdf"))
 
-## ---- vb-samples-theta ----
-theta_samples <- file.path(output_dir, "theta_samples_vb.feather") %>%
-  read_feather()
-colnames(theta_samples) <- c("rep", "n", "k", "theta")
-
-theta_plot(
-  list("samples" = theta, "truth" = theta_truth, "fit" = theta_fit),
-  aligned = TRUE
-) %>%
-  ggsave(file = file.path(plot_dir, "theta_vb.pdf"))
-
 ## ---- vb-samples-beta ----
 beta_samples <- file.path(output_dir, "beta_samples_vb.feather") %>%
   read_feather()
 colnames(beta_samples) <- c("rep", "k", "v", "value")
 beta_samples$v <- factor(beta_samples$v, levels = v_order)
+
+pi <- match_matrices(
+  beta_samples,
+  beta_truth %>%
+    select(-k) %>%
+    as.matrix()
+)
+
+beta_samples$k <- pi$pi_row
 
 beta_plot(
   list("samples" = beta_samples, "truth" = mbeta_truth),
@@ -206,6 +202,24 @@ beta_plot(
 ) %>%
   ggsave(file = file.path(plot_dir, "beta_vb.pdf"))
 
+## ---- vb-samples-theta ----
+theta_samples <- file.path(output_dir, "theta_samples_vb.feather") %>%
+  read_feather()
+colnames(theta_samples) <- c("rep", "n", "k", "theta")
+
+for (i in seq_len(R)) {
+  print_skip(i)
+  cur_pi <- pi[which(pi$rep == i), "pi_row"]
+  for (j in seq_along(cur_pi)) {
+    theta[which(theta$rep == i & theta$k == j), "k"] <- cur_pi[j]
+  }
+}
+
+theta_plot(
+  list("samples" = theta, "truth" = theta_truth),
+  aligned = TRUE
+) %>%
+  ggsave(file = file.path(plot_dir, "theta_vb.pdf"))
 
 ## ---- gibbs-samples-beta ----
 beta_samples <- file.path(output_dir, "beta_samples_gibbs.feather") %>%

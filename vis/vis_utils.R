@@ -154,16 +154,12 @@ match_matrices <- function(Xs, Z) {
 #' @return p [ggplot] The ggplot object used to compare the sampled
 #'   and true thetas.
 theta_plot <- function(plot_data, aligned = FALSE) {
-  if (aligned) {
-    hist_aes <- aes(x = theta, fill = as.factor(k))
-  } else {
-    hist_aes <- aes(x = theta)
-  }
-
   p <- ggplot() +
-    geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.01,
-                   position = "identity", alpha = 0.8) +
-    geom_vline(data = plot_data$truth, aes(xintercept = value), linetype = 1, col = "#696969") +
+    geom_histogram(data = plot_data$samples, aes(x = theta, fill = as.factor(k)),
+                   binwidth = 0.01, position = "identity", alpha = 0.8) +
+    geom_vline(data = plot_data$truth,
+               aes(xintercept = value, col = as.factor(k)),
+               linetype = 1) +
     facet_wrap(~n) +
     scale_fill_brewer(palette = "Set2") +
     theme(
@@ -172,10 +168,11 @@ theta_plot <- function(plot_data, aligned = FALSE) {
     )
 
   if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = theta), linetype = 2, col = "#696969")
+    p <- p + geom_vline(data = plot_data$fit,
+                        aes(xintercept = theta, col = as.factor(k)),
+                        linetype = 2)
   }
-
-  p
+  p + labs(fill = "k", col = "k")
 }
 
 #' Plot many samples from beta
@@ -208,7 +205,8 @@ beta_plot <- function(plot_data, aligned = FALSE) {
     geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.003,
                    position = "identity", alpha = 0.8) +
     geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
-    geom_vline(data = plot_data$truth, aes(xintercept = value), col = "#696969", size = 0.5, linetype = 1) +
+    geom_vline(data = plot_data$truth, aes(xintercept = value, col = k),
+             size = 0.5, linetype = 1) +
     scale_y_continuous(expand = c(0, 0)) +
     coord_flip() +
     facet_grid(. ~ v) +
@@ -216,14 +214,14 @@ beta_plot <- function(plot_data, aligned = FALSE) {
     theme(panel.spacing = unit(0, "line"))
 
   if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value),
-                        size = 0.5, linetype = 2, col = "#696969")
+    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value, col = k),
+                        size = 0.5, linetype = 2)
   }
-  p
+  p + labs(fill = "k", col = "k")
 }
 
 print_skip <- function(i, p = 50) {
   if (i %% p == 0) {
-    cat(sprintf("aligning replicate %d\n", i))
+    cat(sprintf("processing replicate %d\n", i))
   }
 }
