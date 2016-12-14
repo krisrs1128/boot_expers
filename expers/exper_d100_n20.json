@@ -18,10 +18,10 @@
   },
   "parallel": {
     "replicates": 4000,
-    "batches": 10,
+    "batches": 20,
     "basename": "lda",
     "partitions": "hns,normal",
-    "mem_alloc": 4000,
+    "mem_alloc": 1000,
     "time_alloc": "00:40:00"
   }
 }
