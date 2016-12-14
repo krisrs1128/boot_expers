@@ -59,7 +59,7 @@ theta_truth <- file.path(paths$base, paths$params, "theta.feather") %>%
 theta_truth$n <- seq_len(nrow(theta_truth))
 theta_truth <- theta_truth %>%
   melt(id.vars = "n", variable.name = "k", value.name = "theta")
-theta_truth$k <- gsub("V", "", theta_truth$k)
+theta_truth$k <- as.integer(gsub("V", "", theta_truth$k))
 
 theta_fit <- output_dir %>%
   list.files("theta_hat_vb", full.names = TRUE) %>%
@@ -174,7 +174,7 @@ theta_plot(
 beta_samples <- file.path(output_dir, "beta_samples_vb.feather") %>%
   read_feather()
 colnames(beta_samples) <- c("rep", "k", "v", "value")
-R <- max(theta_samples$rep)
+R <- max(beta_samples$rep)
 
 pi <- match_matrices(
   beta_samples,
@@ -196,18 +196,20 @@ beta_plot(
 theta_samples <- file.path(output_dir, "theta_samples_vb.feather") %>%
   read_feather()
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
+theta_samples$n <- factor(theta_samples$n, levels = n_order)
 
 theta_old <- theta_samples
 for (i in seq_len(R)) {
   print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), "pi_row"] %>% unlist()
-  for (j in seq_along(cur_pi)) {
-    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
+  cur_pi <- pi[which(pi$rep == i), c("row", "pi_row")] %>%
+    arrange(row)
+  for (j in seq_len(nrow(cur_pi))) {
+    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j, "pi_row"]
   }
 }
 
 theta_plot(
-  list("samples" = theta, "truth" = theta_truth),
+  list("samples" = theta_samples, "truth" = theta_truth),
   aligned = TRUE
 ) %>%
   ggsave(file = file.path(plot_dir, "theta_vb.pdf"))
@@ -216,6 +218,7 @@ theta_plot(
 beta_samples <- file.path(output_dir, "beta_samples_gibbs.feather") %>%
   read_feather()
 colnames(beta_samples) <- c("rep", "k", "v", "value")
+R <- max(beta_samples$rep)
 pi <- match_matrices(
   beta_samples,
   beta_truth %>%
@@ -232,18 +235,19 @@ beta_plot(
 ) %>%
   ggsave(file = file.path(plot_dir, "beta_gibbs.pdf"))
 
-## ---- gibbs-samples-thtea ----
+## ---- gibbs-samples-theta ----
 theta_samples <- file.path(output_dir, "theta_samples_gibbs.feather") %>%
   read_feather()
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
-R <- max(theta_samples$rep)
+theta_samples$n <- factor(theta_samples$n, levels = n_order)
 
 theta_old <- theta_samples
 for (i in seq_len(R)) {
   print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), "pi_row"] %>% unlist()
-  for (j in seq_along(cur_pi)) {
-    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
+  cur_pi <- pi[which(pi$rep == i), c("row", "pi_row")] %>%
+    arrange(row)
+  for (j in seq_len(nrow(cur_pi))) {
+    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j, "pi_row"]
   }
 }
 

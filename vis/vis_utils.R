@@ -161,10 +161,11 @@ theta_plot <- function(plot_data, aligned = FALSE) {
     facet_wrap(~n) +
     scale_fill_brewer(palette = "Set2") +
     scale_color_brewer(palette = "Set2") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 2)) +
     theme(
       panel.border = element_rect(fill = "transparent", size = 0.4),
       panel.spacing = unit(0, "line"),
-      axis.text = element_blank()
+      axis.text.x = element_blank()
     )
 
   if (!is.null(plot_data$fit)) {
@@ -201,7 +202,7 @@ beta_plot <- function(plot_data, aligned = FALSE) {
     geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
     geom_vline(data = plot_data$truth, aes(xintercept = value, col = as.factor(k)),
              size = 0.5, linetype = 1) +
-    scale_y_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0), breaks = scales::pretty_breaks(n = 2)) +
     coord_flip() +
     facet_grid(. ~ v) +
     scale_fill_brewer(palette = "Set2") +
