@@ -133,7 +133,7 @@ beta_plot(
 theta_old <- theta
 for (i in seq_len(R)) {
   print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), "pi_row"]
+  cur_pi <- pi[which(pi$rep == i), "pi_row"] %>% unlist()
   for (j in seq_along(cur_pi)) {
     theta[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
   }
@@ -149,7 +149,7 @@ theta_plot(
 beta_samples <- file.path(output_dir, "beta_samples_vb.feather") %>%
   read_feather()
 colnames(beta_samples) <- c("rep", "k", "v", "value")
-beta_samples$v <- factor(beta_samples$v, levels = v_order)
+R <- max(theta_samples$rep)
 
 pi <- match_matrices(
   beta_samples,
@@ -159,6 +159,7 @@ pi <- match_matrices(
 )
 
 beta_samples$k <- pi$pi_row
+beta_samples$v <- factor(beta_samples$v, levels = v_order)
 
 beta_plot(
   list("samples" = beta_samples, "truth" = mbeta_truth),
@@ -174,7 +175,7 @@ colnames(theta_samples) <- c("rep", "n", "k", "theta")
 theta_old <- theta_samples
 for (i in seq_len(R)) {
   print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), "pi_row"]
+  cur_pi <- pi[which(pi$rep == i), "pi_row"] %>% unlist()
   for (j in seq_along(cur_pi)) {
     theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
   }
@@ -210,11 +211,12 @@ beta_plot(
 theta_samples <- file.path(output_dir, "theta_samples_gibbs.feather") %>%
   read_feather()
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
+R <- max(theta_samples$rep)
 
 theta_old <- theta_samples
 for (i in seq_len(R)) {
   print_skip(i)
-  cur_pi <- pi[which(pi$rep == i), "pi_row"]
+  cur_pi <- pi[which(pi$rep == i), "pi_row"] %>% unlist()
   for (j in seq_along(cur_pi)) {
     theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
   }
