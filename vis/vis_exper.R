@@ -13,7 +13,6 @@
 
 ## ---- setup ----
 args <- commandArgs(trailingOnly=TRUE) # give paths for experiment json
-args <- list("/scratch/users/kriss1/working/boot_expers/expers/exper_d100_n100.json")
 library("jsonlite")
 library("feather")
 library("plyr")
