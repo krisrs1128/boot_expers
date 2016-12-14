@@ -51,7 +51,7 @@ stan_data <- list(
   alpha = model$alpha0 * rep(1, model$K)
 )
 
-fit <- fit_model(stan_data, "src/lda.stan", keep_samples = TRUE)
+fit <- fit_model(stan_data, "src/lda.stan", keep_samples = TRUE, output_samples = 4000)
 write_feather(fit$beta_hat, path_output("beta_hat_vb.feather"))
 write_feather(fit$theta_hat, path_output("theta_hat_vb.feather"))
 write_feather(data.table(melt(fit$samples$beta)), path_output("beta_samples_vb.feather"))

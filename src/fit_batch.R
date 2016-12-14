@@ -51,7 +51,7 @@ for (i in seq(start_ix, end_ix)) {
     alpha = alpha0 * rep(1, nrow(beta))
   )
 
-  fit <- fit_model(stan_data, stan_file)
+  fit <- fit_model(stan_data, stan_file, output_samples = 4000)
   write_feather(fit$beta_hat, output_path(output_dir)(paste0("beta_boot_", i, ".feather")))
   write_feather(fit$theta_hat, output_path(output_dir)(paste0("theta_boot_", i, ".feather")))
 }
