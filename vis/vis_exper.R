@@ -130,11 +130,12 @@ beta_plot(
   ggsave(file = file.path(plot_dir, "beta_aligned.pdf"))
 
 ## ---- align-theta ----
+theta_old <- theta
 for (i in seq_len(R)) {
   print_skip(i)
   cur_pi <- pi[which(pi$rep == i), "pi_row"]
   for (j in seq_along(cur_pi)) {
-    theta[which(theta$rep == i & theta$k == j), "k"] <- cur_pi[j]
+    theta[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
   }
 }
 
@@ -170,11 +171,12 @@ theta_samples <- file.path(output_dir, "theta_samples_vb.feather") %>%
   read_feather()
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
 
+theta_old <- theta_samples
 for (i in seq_len(R)) {
   print_skip(i)
   cur_pi <- pi[which(pi$rep == i), "pi_row"]
   for (j in seq_along(cur_pi)) {
-    theta[which(theta$rep == i & theta$k == j), "k"] <- cur_pi[j]
+    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
   }
 }
 
@@ -209,11 +211,12 @@ theta_samples <- file.path(output_dir, "theta_samples_gibbs.feather") %>%
   read_feather()
 colnames(theta_samples) <- c("rep", "n", "k", "theta")
 
+theta_old <- theta_samples
 for (i in seq_len(R)) {
   print_skip(i)
   cur_pi <- pi[which(pi$rep == i), "pi_row"]
   for (j in seq_along(cur_pi)) {
-    theta_samples[which(theta_samples$rep == i & theta_samples$k == j), "k"] <- cur_pi[j]
+    theta_samples[which(theta_old$rep == i & theta_old$k == j), "k"] <- cur_pi[j]
   }
 }
 
