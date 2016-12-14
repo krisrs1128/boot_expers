@@ -156,7 +156,7 @@ theta_plot <- function(plot_data, aligned = FALSE) {
     geom_histogram(data = plot_data$samples, aes(x = theta, fill = as.factor(k)),
                    binwidth = 0.01, position = "identity", alpha = 0.8) +
     geom_vline(data = plot_data$truth,
-               aes(xintercept = value, col = as.factor(k)),
+               aes(xintercept = theta, col = as.factor(k)),
                linetype = 1) +
     facet_wrap(~n) +
     scale_fill_brewer(palette = "Set2") +

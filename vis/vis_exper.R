@@ -13,6 +13,7 @@
 
 ## ---- setup ----
 args <- commandArgs(trailingOnly=TRUE) # give paths for experiment json
+args <- list("/scratch/users/kriss1/working/boot_expers/expers/exper_d100_n100.json")
 library("jsonlite")
 library("feather")
 library("plyr")
@@ -57,29 +58,53 @@ theta_truth <- file.path(paths$base, paths$params, "theta.feather") %>%
   read_feather()
 theta_truth$n <- seq_len(nrow(theta_truth))
 theta_truth <- theta_truth %>%
-  melt(measure.vars = c("V1", "V2"), variable.name = "k")
-theta_truth$k <- as.integer(gsub("V", "", theta_truth$k))
+  melt(id.vars = "n", variable.name = "k", value.name = "theta")
+theta_truth$k <- gsub("V", "", theta_truth$k)
 
 theta_fit <- output_dir %>%
   list.files("theta_hat_vb", full.names = TRUE) %>%
   read_feather()
 
+pi <- match_matrix(
+  theta_fit %>%
+    dcast(k ~ n) %>%
+    select(-k) %>%
+    as.matrix(),
+  theta_truth %>%
+    dcast(k ~ n) %>%
+    select(-k) %>%
+    as.matrix()
+)
+
+theta_old <- theta_fit
+for (i in seq_along(pi)) {
+  theta_fit[theta_old$k == pi[i], "k"] <- unique(theta_truth$k)[i]
+}
+
 ## ---- beta-benchmarks ----
+beta_fit <- output_dir %>%
+  list.files("beta_hat_vb", full.names = TRUE) %>%
+  read_feather()
 beta_truth <- file.path(paths$base, paths$params, "beta.feather") %>%
   read_feather()
+
+# align beta truth and fit
+pi <- match_matrix(
+  beta_fit %>%
+    select(-Var2) %>%
+    as.matrix(),
+  as.matrix(beta_truth)
+)
+
 beta_truth$k <- seq_len(nrow(beta_truth))
+beta_fit$k <- beta_fit$Var2[pi]
+beta_fit$Var2 <- NULL
 
 mbeta_truth <- beta_truth %>%
   melt(id.vars = "k", variable.name = "v")
 mbeta_truth$v <- gsub("V", "", mbeta_truth$v)
 
-beta_fit <- output_dir %>%
-  list.files("beta_hat_vb", full.names = TRUE) %>%
-  read_feather()
-
 beta_fit <- beta_fit %>%
-  mutate(k = Var2) %>%
-  select(-Var2) %>%
   melt(id.vars = "k", variable.name = "v")
 
 ## ---- process-beta ----
@@ -103,7 +128,7 @@ beta_fit$v <- factor(beta_fit$v, levels = v_order)
 ## ---- process-theta ----
 n_order <- theta_truth %>%
   group_by(n) %>%
-  summarise(entropy = -mean(value * log(value))) %>%
+  summarise(entropy = -mean(theta * log(theta))) %>%
   arrange(entropy) %>%
   select(n) %>%
   unlist()
