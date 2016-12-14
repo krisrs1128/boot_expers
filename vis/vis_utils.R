@@ -35,18 +35,16 @@ combine_replicates <- function(files) {
 #' @return ggtern [ggtern object] A ggtern plot object of the points
 #'   on the specified
 simplex_proj <- function(p, coords) {
-  mp <- p[, coords] %>%
-    melt() %>%
-    dcast(Var1 ~ Var2) %>%
-    select(-Var1)
-  colnames(mp) <- paste0("dim_", colnames(mp))
-  dims <- colnames(mp)
+  coords <- paste0("dim_", coords)
+  colnames(p) <- paste0("dim_", colnames(p))
 
-  ggtern(mp) +
-    geom_point(aes_string(x = dims[1], y = dims[2], z = dims[3])) +
+  ggtern(p) +
+    geom_point(aes_string(x = coords[1], y = coords[2], z = coords[3], col = "as.factor(dim_k)"),
+               size = .5, alpha = 0.5) +
+    scale_color_brewer(palette = "Set2") +
+    labs(col = "k") +
     theme_nogrid()
 }
-
 
 #' Identify a permutation that aligns rows of two matrices
 #'
@@ -162,6 +160,7 @@ theta_plot <- function(plot_data, aligned = FALSE) {
                linetype = 1) +
     facet_wrap(~n) +
     scale_fill_brewer(palette = "Set2") +
+    scale_color_brewer(palette = "Set2") +
     theme(
       panel.border = element_rect(fill = "transparent", size = 0.4),
       panel.spacing = unit(0, "line")
@@ -195,31 +194,33 @@ theta_plot <- function(plot_data, aligned = FALSE) {
 #' @return p [ggplot] The ggplot object used to compare the sampled
 #'   and true betas.
 beta_plot <- function(plot_data, aligned = FALSE) {
-  if (aligned) {
-    hist_aes <- aes(x = value, fill = as.factor(k))
-  } else {
-    hist_aes <- aes(x = value)
-  }
-
   p <- ggplot() +
-    geom_histogram(data = plot_data$samples, hist_aes, binwidth = 0.003,
-                   position = "identity", alpha = 0.8) +
+    geom_histogram(data = plot_data$samples, aes(x = value, fill = as.factor(k)),
+                   binwidth = 0.003, position = "identity", alpha = 0.8) +
     geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
-    geom_vline(data = plot_data$truth, aes(xintercept = value, col = k),
+    geom_vline(data = plot_data$truth, aes(xintercept = value, col = as.factor(k)),
              size = 0.5, linetype = 1) +
     scale_y_continuous(expand = c(0, 0)) +
     coord_flip() +
     facet_grid(. ~ v) +
     scale_fill_brewer(palette = "Set2") +
+    scale_color_brewer(palette = "Set2") +
     theme(panel.spacing = unit(0, "line"))
 
   if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value, col = k),
+    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value, col = as.factor(k)),
                         size = 0.5, linetype = 2)
   }
   p + labs(fill = "k", col = "k")
 }
 
+#' Helper function, to print every p^th iteration
+#'
+#' This is just so we can track our progress in slow loops
+#'
+#' @param i [integer] The current iteration
+#' @param p [integer] If p divides i, then we print i
+#' @return NULL
 print_skip <- function(i, p = 50) {
   if (i %% p == 0) {
     cat(sprintf("processing replicate %d\n", i))

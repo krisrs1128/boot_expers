@@ -58,6 +58,7 @@ theta_truth <- file.path(paths$base, paths$params, "theta.feather") %>%
 theta_truth$n <- seq_len(nrow(theta_truth))
 theta_truth <- theta_truth %>%
   melt(measure.vars = c("V1", "V2"), variable.name = "k")
+theta_truth$k <- as.integer(gsub("V", "", theta_truth$k))
 
 theta_fit <- output_dir %>%
   list.files("theta_hat_vb", full.names = TRUE) %>%
@@ -67,6 +68,7 @@ theta_fit <- output_dir %>%
 beta_truth <- file.path(paths$base, paths$params, "beta.feather") %>%
   read_feather()
 beta_truth$k <- seq_len(nrow(beta_truth))
+
 mbeta_truth <- beta_truth %>%
   melt(id.vars = "k", variable.name = "v")
 mbeta_truth$v <- gsub("V", "", mbeta_truth$v)
@@ -74,8 +76,10 @@ mbeta_truth$v <- gsub("V", "", mbeta_truth$v)
 beta_fit <- output_dir %>%
   list.files("beta_hat_vb", full.names = TRUE) %>%
   read_feather()
-colnames(beta_fit)[1] <- "k"
+
 beta_fit <- beta_fit %>%
+  mutate(k = Var2) %>%
+  select(-Var2) %>%
   melt(id.vars = "k", variable.name = "v")
 
 ## ---- vis-beta ----
@@ -95,59 +99,6 @@ v_order <- mbeta %>%
 mbeta$v <- factor(mbeta$v, levels = v_order)
 mbeta_truth$v <- factor(mbeta_truth$v, levels = v_order)
 beta_fit$v <- factor(beta_fit$v, levels = v_order)
-
-beta_plot(list("samples" = mbeta, "truth" = mbeta_truth, "fit" = beta_fit)) %>%
-  ggsave(file = file.path(plot_dir, "beta_unaligned.pdf"), device = NULL)
-
-## ---- vis-theta ----
-theta_plot(list("samples" = theta, "truth" = theta_truth, "fit" = theta_fit)) %>%
-  ggsave(file = file.path(plot_dir, "theta_unaligned.pdf"), device = NULL)
-
-## ---- tours ----
-projs <- combn(exper$model$V, 3)
-
-p_beta <- mbeta %>%
-  select(-file) %>%
-  dcast(k + rep ~ v) %>%
-  select(-k, -rep) %>%
-  as.matrix()
-
-for (i in seq_len(10)) {
-  simplex_proj(p_beta, projs[, i]) %>%
-    ggsave(file = file.path(plot_dir, paste0("simplex_proj_", i, ".pdf")), device = NULL)
-}
-
-## ---- correspondence-analysis ----
-p_beta_fit <- beta_fit %>%
-  dcast(k ~ v) %>%
-  select(-k) %>%
-  as.matrix()
-
-p_beta_truth <- mbeta_truth %>%
-  dcast(k ~ v) %>%
-  select(-k) %>%
-  as.matrix()
-
-p_beta <- rbind(
-  data.frame(type = "bootstrap", p_beta),
-  data.frame(type = "fit", p_beta_fit),
-  data.frame(type = "truth", p_beta_truth)
-)
-
-ca_beta <- CA(p_beta %>% select(-type))
-beta_row_coords <- data.frame(
-  type = p_beta$type,
-  ca_beta$row$coord
-)
-
-p <- ggplot() +
-  geom_point(data = beta_row_coords %>% filter(type == "bootstrap"),
-             aes(x = Dim.1, y = Dim.2, col = type), size = .5, alpha = 0.5) +
-  geom_point(data = beta_row_coords %>% filter(type != "bootstrap"),
-             aes(x = Dim.1, y = Dim.2, col = type)) +
-  scale_color_brewer(palette = "Set2") +
-  coord_fixed()
-ggsave(p, file = file.path(plot_dir, "correspondence_analysis.pdf"))
 
 ## ---- alignment-approach ----
 R <- max(mbeta$rep)
@@ -259,3 +210,49 @@ theta_plot(
   aligned = TRUE
 ) %>%
   ggsave(file = file.path(plot_dir, "theta_gibbs.pdf"))
+
+
+## ---- tours ----
+projs <- combn(exper$model$V, 3)
+class(projs) <- "character"
+
+p_beta <- mbeta %>%
+  select(-file) %>%
+  dcast(k + rep ~ v)
+
+for (i in seq_len(10)) {
+  simplex_proj(p_beta, projs[, i]) %>%
+    ggsave(file = file.path(plot_dir, paste0("simplex_proj_", i, ".pdf")), device = NULL)
+}
+
+## ---- correspondence-analysis ----
+p_beta_fit <- beta_fit %>%
+  dcast(k ~ v) %>%
+  as.matrix()
+
+p_beta_truth <- mbeta_truth %>%
+  dcast(k ~ v) %>%
+  as.matrix()
+
+p_beta <- rbind(
+  data.frame(type = "bootstrap", p_beta %>% select(-rep)),
+  data.frame(type = "fit", p_beta_fit),
+  data.frame(type = "truth", p_beta_truth)
+)
+
+ca_beta <- CA(p_beta %>% select(-type, -k))
+beta_row_coords <- data.frame(
+  type = p_beta$type,
+  k = p_beta$k,
+  ca_beta$row$coord
+)
+
+p <- ggplot() +
+  geom_point(data = beta_row_coords %>% filter(type == "bootstrap"),
+             aes(x = Dim.1, y = Dim.2, shape = type, col = as.factor(k)),
+             size = .5, alpha = 0.5) +
+  geom_point(data = beta_row_coords %>% filter(type != "bootstrap"),
+             aes(x = Dim.1, y = Dim.2, shape = type, col = as.factor(k))) +
+  scale_color_brewer(palette = "Set2") +
+  coord_fixed()
+ggsave(p, file = file.path(plot_dir, "correspondence_analysis.pdf"))
