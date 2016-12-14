@@ -16,11 +16,11 @@
     "K": 2
   },
   "parallel": {
-    "replicates": 1000,
+    "replicates": 4000,
     "batches": 10,
     "basename": "lda",
     "partitions": "hns,normal",
     "mem_alloc": 4000,
-    "time_alloc": "00:10:00"
+    "time_alloc": "00:40:00"
   }
 }
