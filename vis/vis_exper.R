@@ -68,6 +68,7 @@ ggplot() +
   geom_histogram(data = theta %>% filter(N == 20, as.numeric(n) > 80),
                  aes(x = theta, fill = as.factor(k)),
                  position = "identity", alpha = 0.8, binwidth = 0.01) +
+
   geom_vline(data = theta_supp %>% filter(as.numeric(n) > 80),
              aes(xintercept = theta, col = as.factor(k))) +
   scale_fill_brewer(palette = "Set2") +
