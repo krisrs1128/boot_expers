@@ -22,10 +22,10 @@ min_theme <- theme_update(
   axis.ticks = element_blank(),
   legend.title = element_text(size = 8),
   legend.text = element_text(size = 6),
-  axis.text = element_text(size = 6),
+  axis.text = element_text(size = 4.5),
   axis.title = element_text(size = 8),
   strip.background = element_blank(),
-  strip.text = element_text(size = 8),
+  strip.text = element_text(size = 4.5),
   legend.key = element_blank()
 )
 
@@ -49,35 +49,36 @@ theta_supp <- theta %>%
 theta <- theta %>%
   filter(!(method %in% c("truth", "vb_fit")))
 
-## ---- theta-small-n-large-disc ----
+## ---- thetasmallnlargedisc ----
 ggplot() +
   geom_histogram(data = theta %>% filter(N == 20, as.numeric(n) < 20),
                  aes(x = theta, fill = as.factor(k)),
-                 position = "identity", alpha = 0.8, binwidth = 0.03) +
+                 position = "identity", alpha = 0.8, binwidth = 0.01) +
   geom_vline(data = theta_supp %>% filter(as.numeric(n) < 20),
              aes(xintercept = theta, col = as.factor(k))) +
   scale_fill_brewer(palette = "Set2") +
   scale_color_brewer(palette = "Set2") +
   scale_y_continuous(expand = c(0, 0), breaks = pretty_breaks(n = 1)) +
   facet_grid(n ~ method, scale = "free_y") +
-  labs(fill = "cluster") +
-  ggtitle("Posterior thetas [large discrepancies, small N]")
+  labs(fill = "cluster", col = "cluster") +
+  ggtitle("Posterior thetas [large discrepancies, small n(i)]")
 
-## ---- theta-small-n-small-disc ----
+## ---- thetasmallnsmalldisc ----
 ggplot() +
   geom_histogram(data = theta %>% filter(N == 20, as.numeric(n) > 80),
                  aes(x = theta, fill = as.factor(k)),
-                 position = "identity", alpha = 0.8, binwidth = 0.03) +
+                 position = "identity", alpha = 0.8, binwidth = 0.01) +
+
   geom_vline(data = theta_supp %>% filter(as.numeric(n) > 80),
              aes(xintercept = theta, col = as.factor(k))) +
   scale_fill_brewer(palette = "Set2") +
   scale_color_brewer(palette = "Set2") +
   scale_y_continuous(expand = c(0, 0), breaks = pretty_breaks(n = 1)) +
   facet_grid(n ~ method, scale = "free_y") +
-  labs(fill = "cluster") +
-  ggtitle("Posterior Thetas [small discrepancies, small N]")
+  labs(fill = "cluster", col = "cluster") +
+  ggtitle("Posterior Thetas [small discrepancies, small n(i)]")
 
-## ---- theta-large-n-large-disc ----
+## ---- thetalargenlargedisc ----
 ggplot() +
   geom_histogram(data = theta %>% filter(N == 100, as.numeric(n) < 20),
                  aes(x = theta, fill = as.factor(k)),
@@ -88,10 +89,10 @@ ggplot() +
   scale_color_brewer(palette = "Set2") +
   scale_y_continuous(expand = c(0, 0), breaks = pretty_breaks(n = 1)) +
   facet_grid(n ~ method, scale = "free_y") +
-  labs(fill = "cluster") +
-  ggtitle("Posterior Thetas [large discrepancies, large N]")
+  labs(fill = "cluster", col = "cluster") +
+  ggtitle("Posterior Thetas [large discrepancies, large n(i)]")
 
-## ---- theta-large-n-small-disc ----
+## ---- thetalargensmalldisc ----
 ggplot() +
   geom_histogram(data = theta %>% filter(N == 100, as.numeric(n) > 80),
                  aes(x = theta, fill = as.factor(k)),
@@ -102,8 +103,8 @@ ggplot() +
   scale_color_brewer(palette = "Set2") +
   scale_y_continuous(expand = c(0, 0), breaks = pretty_breaks(n = 1)) +
   facet_grid(n ~ method, scale = "free_y") +
-  labs(fill = "cluster") +
-  ggtitle("Posterior thetas [small discrepancies, large N]")
+  labs(fill = "cluster", col = "cluster") +
+  ggtitle("Posterior thetas [small discrepancies, large n(i)]")
 
 ## ---- prepare-beta ----
 beta_supp <- beta %>%
@@ -113,9 +114,10 @@ beta_supp <- beta %>%
 beta <- beta %>%
   filter(!(method %in% c("truth", "vb_fit", "vb_mean")))
 
-## ---- beta-small-n ----
+## ---- betasmalln ----
 ggplot() +
-  geom_vline(data = beta_supp, aes(xintercept = value, col = as.factor(k))) +
+  geom_vline(data = beta_supp, aes(xintercept = value, col = as.factor(k)),
+             size = 0.2) +
   geom_histogram(data = beta %>% filter(N == 20),
                  aes(x = value, fill = as.factor(k)),
                  binwidth = .01) +
@@ -130,14 +132,16 @@ ggplot() +
     axis.text.x = element_blank(),
     panel.spacing = unit(0, "line")
   ) +
-  labs(fill = "cluster")
+  labs(fill = "cluster", col = "cluster") +
+  ggtitle("Posterior Betas [small n(i)]")
 
-## ---- beta-large-n ----
+## ---- betalargen ----
 ggplot() +
-  geom_vline(data = beta_supp, aes(xintercept = value, col = as.factor(k))) +
+  geom_vline(data = beta_supp, aes(xintercept = value, col = as.factor(k)),
+             size = 0.2) +
   geom_histogram(data = beta %>% filter(N == 100),
                  aes(x = value, fill = as.factor(k)),
-                 binwidth = .01) +
+                 binwidth = .003) +
   geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
   geom_vline(xintercept = 0, size = 0.3, col = "#696969") +
   scale_y_continuous(expand = c(0, 0), breaks = scales::pretty_breaks(n = 2)) +
@@ -149,4 +153,5 @@ ggplot() +
     axis.text.x = element_blank(),
     panel.spacing = unit(0, "line")
   ) +
-  labs(fill = "cluster")
+  labs(fill = "cluster", col = "cluster") +
+  ggtitle("Posterior Betas [large n(i)]")
