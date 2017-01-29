@@ -27,12 +27,9 @@ path_output <- output_path(file.path(paths$base, paths$output_dir))
 path_params <- output_path(file.path(paths$base, paths$params_dir))
 path_data <- output_path(file.path(paths$base, paths$data_dir))
 
-dir.create(paths$base)
-dir.create(file.path(paths$base, paths$params_dir))
-dir.create(file.path(paths$base, paths$data_dir))
-dir.create(file.path(paths$base, paths$output_dir))
-dir.create(file.path(paths$base, paths$plot_dir))
-dir.create(file.path(paths$base, paths$tmp_dir))
+for (i in seq_along(paths)) {
+  dir.create(paths[[i]], recursive = TRUE)
+}
 
 ## ---- generate-data ----
 model <- exper$model
@@ -51,28 +48,32 @@ stan_data <- list(
   alpha = model$alpha0 * rep(1, model$K)
 )
 
-fit <- fit_model(
+#' Wrapper to save the generated model parameters to file
+write_output <- function(prefix, ...) {
+  fit <- fit_model(...)
+
+  write_feather(fit$beta_hat, path_output(paste0(prefix, "beta_hat.feather")))
+  write_feather(fit$theta_hat, path_output(paste0(prefix, "theta_hat.feather")))
+  write_feather(data.table(melt(fit$samples$beta)), path_output(paste0(prefix, "beta_samples.feather")))
+  write_feather(data.table(melt(fit$samples$theta)), path_output(paste0(prefix, "theta_samples.feather")))
+}
+
+write_output(
+  "vb-",
   stan_data,
   "src/lda.stan",
   keep_samples = TRUE,
   output_samples = model$output_samples
 )
-write_feather(fit$beta_hat, path_output("beta_hat_vb.feather"))
-write_feather(fit$theta_hat, path_output("theta_hat_vb.feather"))
-write_feather(data.table(melt(fit$samples$beta)), path_output("beta_samples_vb.feather"))
-write_feather(data.table(melt(fit$samples$theta)), path_output("theta_samples_vb.feather"))
 
 ## ---- fit-gibbs-model ----
-fit <- fit_model(
+write_output(
+  "gibbs-",
   stan_data,
   "src/lda.stan",
   keep_samples = TRUE,
   use_vb = FALSE
 )
-write_feather(fit$beta_hat, path_output("beta_hat_gibbs.feather"))
-write_feather(fit$theta_hat, path_output("theta_hat_gibbs.feather"))
-write_feather(data.table(melt(fit$samples$beta)), path_output("beta_samples_gibbs.feather"))
-write_feather(data.table(melt(fit$samples$theta)), path_output("theta_samples_gibbs.feather"))
 
 ## ---- send-replicates ----
 parallel <- exper$parallel
@@ -97,7 +98,7 @@ for (i in seq_len(parallel$batches)) {
   )
 
   rscript_cmd <- paste0(
-    c("Rscript", file.path(getwd(), "/src/fit_batch.R"), cur_opts),
+    c("Rscript", file.path(getwd(), "src", "fit_batch.R"), cur_opts),
     collapse = " "
   )
 
