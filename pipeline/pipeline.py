@@ -51,22 +51,24 @@ class LDAExperiment(luigi.WrapperTask):
 
         tasks = []
         for (k, v) in enumerate(experiment):
+            data_params = [
+                str(v["K"]),
+                str(v["alpha0"]),
+                str(v["gamma0"]),
+                str(v["D"]),
+                str(v["N"]),
+                str(v["V"]),
+                str(v["K"]),
+                str(v["alpha0"]),
+                str(v["gamma0"])
+            ]
+
             for batch_id in range(n_batches):
-                tasks.append(
-                    LDABoot(
-                        str(int(n_samples / n_batches)),
-                        str(batch_id),
-                        str(v["K"]),
-                        str(v["alpha0"]),
-                        str(v["gamma0"]),
-                        str(v["D"]),
-                        str(v["N"]),
-                        str(v["V"]),
-                        str(v["K"]),
-                        str(v["alpha0"]),
-                        str(v["gamma0"])
-                    )
-                )
+                boot_params = [str(int(n_samples / n_batches)), str(batch_id)] + data_params
+                tasks.append(LDABoot(*boot_params))
+
+            gibbs_params = ["gibbs"] + data_params
+            tasks.append(LDAFit(*gibbs_params))
 
         return tasks
 
