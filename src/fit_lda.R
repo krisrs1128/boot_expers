@@ -10,9 +10,9 @@ data_path <- args[[3]]
 fit_method <- args[[4]]
 n_samples <- as.integer(args[[5]])
 keep_fit <- as.logical(args[[6]])
-K <- args[[7]]
-alpha <- args[[8]]
-gamma <- args[[9]]
+K <- as.integer(args[[7]])
+alpha <- as.numeric(args[[8]])
+gamma <- as.numeric(args[[9]])
 
 ## ---- libraries ----
 library("rstan")
@@ -24,18 +24,18 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 ## ---- get-data ----
-N <- read_feather(data_path) %>%
+n <- read_feather(data_path) %>%
     dcast(i ~ v) %>%
     select(-i) %>%
     as.matrix()
 
 stan_data <- list(
     "K" = K,
-    "V" = ncol(N),
-    "D" = nrow(N),
-    "N" = N,
+    "V" = ncol(n),
+    "D" = nrow(n),
+    "n" = n,
     "alpha" = rep(alpha, K),
-    "gamma" = rep(gamma, ncol(N))
+    "gamma" = rep(gamma, ncol(n))
 )
 
 ## ---- fit-model ----
@@ -43,7 +43,7 @@ if (tolower(fit_method) == "vb") {
     fit <- vb(
         stan_model("../src/lda.stan"),
         data = stan_data,
-        iterations = n_samples
+        iter = n_samples
     )
 } else if (tolower(fit_method) == "gibbs") {
     fit <- stan(
@@ -59,7 +59,7 @@ if (tolower(fit_method) == "vb") {
 ## ---- save ----
 output_path <- file.path(output_dir, paste0(fit_method, "-", gen_id))
 if (keep_fit) {
-    save(fit, file.path = paste0(output_path, ".RData"))
+    save(fit, file = paste0(output_path, ".RData"))
 } else {
     samples <- extract(fit)
     samples$beta %>%
