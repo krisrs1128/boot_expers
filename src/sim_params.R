@@ -17,7 +17,7 @@ library("feather")
 library("reshape2")
 
 ## ---- simulate ----
-params <- generate_params(D, K,V, alpha0, gamma0)
+params <- generate_params(D, K, V, alpha0, gamma0)
 dir.create(output_dir)
 write_feather(
   melt(
