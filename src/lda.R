@@ -12,14 +12,14 @@ rdirichlet <- function(n, alpha) {
 generate_params <- function(D, K, V, alpha0, gamma0) {
   list(
     "theta" = rdirichlet(D, alpha0 * rep(1, K)),
-    "beta" = rdirichlet(K, gamma0 * rep(1, V))
+    "beta" = rdirichlet(V, gamma0 * rep(1, K))
   )
 }
 
 generate_data <- function(N, theta, beta) {
-  X <- matrix(nrow = nrow(theta), ncol = ncol(beta))
+  X <- matrix(nrow = nrow(theta), ncol = nrow(beta))
   for (i in seq_len(nrow(theta))) {
-    X[i, ] <- rmultinom(1, N, t(beta) %*% theta[i, ])
+    X[i, ] <- rmultinom(1, N, beta %*% theta[i, ])
   }
   X
 }
