@@ -9,10 +9,9 @@ gen_id <- args[[2]]
 data_path <- args[[3]]
 fit_method <- args[[4]]
 n_samples <- as.integer(args[[5]])
-keep_fit <- as.logical(args[[6]])
-K <- as.integer(args[[7]])
-alpha <- as.numeric(args[[8]])
-gamma <- as.numeric(args[[9]])
+K <- as.integer(args[[6]])
+alpha <- as.numeric(args[[7]])
+gamma <- as.numeric(args[[8]])
 
 ## ---- libraries ----
 library("rstan")
@@ -58,14 +57,4 @@ if (tolower(fit_method) == "vb") {
 
 ## ---- save ----
 output_path <- file.path(output_dir, paste0(fit_method, "-", gen_id))
-if (keep_fit) {
-    save(fit, file = paste0(output_path, ".RData"))
-} else {
-    samples <- extract(fit)
-    samples$beta %>%
-        melt(varnames = c("iterations", "v", "k")) %>%
-        write_feather(paste0(output_path, "-beta_hat.feather"))
-    samples$theta %>%
-        melt(varnames = c("iterations", "i", "k")) %>%
-        write_feather(paste0(output_path, "-theta_hat.feather"))
-}
+save(fit, file = paste0(output_path, ".RData"))
