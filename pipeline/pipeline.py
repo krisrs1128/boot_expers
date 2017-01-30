@@ -21,6 +21,14 @@ def hash_string(string, max_chars=32):
     return hash_obj.hexdigest()[:max_chars]
 
 
+def fit_id(self):
+    return hash_string(
+        "".join([self.K_fit, self.alpha_fit, self.gamma_fit, self.D,
+                 self.N, self.V, self.K, self.alpha0, self.gamma0,
+                 self.conf.get("expers", "n_samples")])
+    )
+
+
 def run_and_check(cmds):
     run_cmd = [str(s) for s in cmds]
     status = subprocess.call(run_cmd)
@@ -38,13 +46,16 @@ class LDAExperiment(luigi.WrapperTask):
         with open(self.conf.get("expers", "master")) as f:
             experiment = json.load(f)
 
+        n_batches = int(self.conf.get("expers", "n_batches"))
+        n_samples = int(self.conf.get("expers", "n_samples"))
+
         tasks = []
         for (k, v) in enumerate(experiment):
-            for fit_method in ["vb", "gibbs"]:
+            for batch_id in range(n_batches):
                 tasks.append(
-                    LDAFit(
-                        fit_method,
-                        True,
+                    LDABoot(
+                        str(int(n_samples / n_batches)),
+                        str(batch_id),
                         str(v["K"]),
                         str(v["alpha0"]),
                         str(v["gamma0"]),
@@ -59,12 +70,74 @@ class LDAExperiment(luigi.WrapperTask):
 
         return tasks
 
+
+class LDABoot(luigi.Task):
+    """
+    Generate parametric bootstrap samples from a fitted LDA model
+    """
+    n_replicates = luigi.Parameter()
+    batch_id = luigi.Parameter()
+    K_fit = luigi.Parameter()
+    alpha_fit = luigi.Parameter()
+    gamma_fit = luigi.Parameter()
+    D = luigi.Parameter()
+    N = luigi.Parameter()
+    V = luigi.Parameter()
+    K = luigi.Parameter()
+    alpha0 = luigi.Parameter()
+    gamma0 = luigi.Parameter()
+
+    conf = configuration.get_config()
+
+    def requires(self):
+        return LDAFit(
+            "vb",
+            self.K_fit,
+            self.alpha_fit,
+            self.gamma_fit,
+            self.D,
+            self.N,
+            self.V,
+            self.K,
+            self.alpha0,
+            self.gamma0
+        )
+
+    def run(self):
+        input_path = self.input().open("r").name
+
+        run_cmd = [
+            "Rscript",
+            self.conf.get("expers", "boot_script"),
+            os.path.join(self.conf.get("expers", "output_dir"), "bootstraps"),
+            self.batch_id,
+            fit_id(self),
+            input_path,
+            self.N,
+            self.alpha0,
+            self.gamma0,
+            self.n_replicates,
+            self.conf.get("expers", "n_samples")
+        ]
+        run_and_check(run_cmd)
+
+    def output(self):
+        output_dir = os.path.join(self.conf.get("expers", "output_dir"), "bootstraps")
+        output_base = [
+            "boot-" + fit_id(self) + str(self.batch_id) + str(i) + ".feather"
+            for i in range(int(self.n_replicates))
+        ]
+
+        theta_paths = [luigi.LocalTarget(os.path.join(output_dir, "theta-" + s)) for s in output_base]
+        beta_paths = [luigi.LocalTarget(os.path.join(output_dir, "beta-" + s)) for s in output_base]
+
+        return theta_paths + beta_paths
+
 class LDAFit(luigi.Task):
     """
     Fit an LDA model on the simulated data .
     """
     fit_method = luigi.Parameter()
-    keep_fit = luigi.Parameter()
     K_fit = luigi.Parameter()
     alpha_fit = luigi.Parameter()
     gamma_fit = luigi.Parameter()
@@ -82,19 +155,15 @@ class LDAFit(luigi.Task):
 
     def run(self):
         data_path = self.input().open("r").name
-        gen_id = hash_string(
-            "".join([self.D, self.N, self.V, self.K, self.alpha0, self.gamma0, self.conf.get("expers", "n_samples")])
-        )
 
         run_cmd = [
             "Rscript",
             self.conf.get("expers", "fit_script"),
             self.conf.get("expers", "output_dir"),
-            gen_id,
+            fit_id(self),
             data_path,
             self.fit_method,
             self.conf.get("expers", "n_samples"),
-            self.keep_fit,
             self.K_fit,
             self.alpha_fit,
             self.gamma_fit
@@ -103,21 +172,8 @@ class LDAFit(luigi.Task):
 
     def output(self):
         output_dir = self.conf.get("expers", "output_dir")
-        gen_id = hash_string(
-            "".join([self.D, self.N, self.V, self.K, self.alpha0, self.gamma0, self.conf.get("expers", "n_samples")])
-        )
-
-        if self.keep_fit:
-            fit_id = self.fit_method + "-" + gen_id + ".RData"
-            output_files = luigi.LocalTarget(os.path.join(output_dir, fit_id))
-        else:
-            fit_id = self.fit_method + "-" + gen_id + ".RData"
-            output_files = [
-                luigi.LocalTarget(os.path.join(output_dir, fit_id, "-beta_hat.feather")),
-                luigi.LocalTarget(os.path.join(output_dir, fit_id, "-theta_hat.feather"))
-            ]
-
-        return output_files
+        output_file = self.fit_method + "-" + fit_id(self) + ".RData"
+        return luigi.LocalTarget(os.path.join(output_dir, output_file))
 
 
 class LDAData(luigi.Task):
