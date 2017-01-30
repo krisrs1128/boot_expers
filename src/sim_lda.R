@@ -2,6 +2,7 @@
 
 ## File description -------------------------------------------------------------
 ## Simulate parameters according to an LDA model, using command line arguments
+
 args <- commandArgs(trailingOnly=TRUE)
 output_dir <- args[[1]]
 output_id <- args[[2]]
@@ -32,5 +33,5 @@ N <- generate_data(N, beta, theta) %>%
 
 write_feather(
   data.table(N),
-  file.path(output_dir, paste0("n-", output_id))
+  file.path(output_dir, paste0("n-", output_id, ".feather"))
 )
