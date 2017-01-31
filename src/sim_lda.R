@@ -28,8 +28,8 @@ theta <- read_feather(theta_path) %>%
   select(-i) %>%
   as.matrix()
 
-n <- generate_data(N, beta, theta) %>%
-  melt(varnames = c("v", "i"), value.name = "n")
+n <- generate_data(N, theta, beta) %>%
+  melt(varnames = c("i", "v"), value.name = "n")
 
 output_path <- file.path(output_dir, paste0("n-", output_id, ".feather"))
 write_feather(
