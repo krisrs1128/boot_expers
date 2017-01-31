@@ -12,7 +12,7 @@ rdirichlet <- function(n, alpha) {
 generate_params <- function(D, K, V, alpha0, gamma0) {
   list(
     "theta" = rdirichlet(D, alpha0 * rep(1, K)),
-    "beta" = rdirichlet(V, gamma0 * rep(1, K))
+    "beta" = t(rdirichlet(K, gamma0 * rep(1, V)))
   )
 }
 
