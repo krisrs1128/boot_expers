@@ -51,8 +51,7 @@ if (tolower(fit_method) == "vb") {
       "../src/lda.stan",
       data = stan_data,
       chains = 1,
-      warmup = n_samples,
-      iter = n_samples
+      iter = 2 * n_samples ## half are warmup
     )
 } else {
     stop("fit_method must be either 'gibbs' or 'vb'")
