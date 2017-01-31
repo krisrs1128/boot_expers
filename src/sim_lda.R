@@ -29,7 +29,7 @@ theta <- read_feather(theta_path) %>%
   as.matrix()
 
 n <- generate_data(N, beta, theta) %>%
-  melt(varnames = c("i", "v"), value.name = "n")
+  melt(varnames = c("v", "i"), value.name = "n")
 
 output_path <- file.path(output_dir, paste0("n-", output_id, ".feather"))
 write_feather(
@@ -40,8 +40,8 @@ write_feather(
 ## ---- update-metadata ----
 metadata <- data.frame(
   "file" = output_path,
-  "D" = nrow(n),
-  "V" = ncol(n),
+  "D" = max(n$i),
+  "V" = max(n$v),
   "N" = N,
   "K" = ncol(beta),
   "alpha0" = NA,
