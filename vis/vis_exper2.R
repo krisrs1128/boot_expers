@@ -7,10 +7,7 @@ library("dplyr")
 library("rstan")
 library("ggplot2")
 
-## ---- paths ----
-output_path <- "/scratch/users/kriss1/output/boot_expers"
-metadata <- fread(file.path(output_path, "metadata.csv"))
-
+## ---- utils ----
 cbind_list <- function(data_list, cbind_vals, cbind_name) {
   ## bind together, not losing tracks of filename
   for (i in seq_along(data_list)) {
@@ -43,6 +40,11 @@ feather_from_paths <- function(paths) {
   rbindlist(data, fill = TRUE)
 }
 
+## ---- paths ----
+output_path <- "/scratch/users/kriss1/output/boot_expers"
+metadata <- fread(file.path(output_path, "metadata.csv")) %>%
+  unique()
+
 ## ---- get-truth ----
 truth_paths <- metadata %>%
   filter(
@@ -64,7 +66,7 @@ samples_paths <- metadata %>%
   select(file) %>%
   unlist()
 
-samples <- rdata_from_paths(samples_paths, "beta", c("iteration", "v", "k")) %>%
+samples <- rdata_from_paths(samples_paths, "beta", c("iteration", "k", "v")) %>%
   left_join(metadata)
 
 ## ---- bootstrap-samples ----
@@ -76,12 +78,56 @@ bootstrap_paths <- metadata %>%
   select(file) %>%
   unlist()
 
-bootstraps <- data_from_paths(bootstrap_paths) %>%
+bootstraps <- feather_from_paths(bootstrap_paths) %>%
   left_join(metadata)
 bootstraps$iteration <- NA
 samples <- rbind(samples, bootstraps)
 
 ## ---- visualize ----
-p <- ggplot(samples) +
-  geom_boxplot(aes(x = v, y = beta)) +
-  facet_grid(N ~ V ~ k, scale = "free")
+library("ggscaffold")
+plot_opts <- list(
+  "x" = "v",
+  "y" = "beta",
+  "fill" = "method",
+  "color" = "D"
+)
+
+merge_boxplot_opts(plot_opts)
+
+cur_samples <- samples
+v_order <- truth_data %>%
+  group_by(v) %>%
+  summarise(m_beta = max(beta)) %>%
+  arrange(desc(m_beta)) %>%
+  select(v) %>%
+  unlist()
+
+cur_samples$v <- factor(cur_samples$v)
+truth_data$v <- factor(truth_data$v)
+p <- ggboxplot(cur_samples, plot_opts) +
+  geom_hline(
+    data = truth_data,
+    aes(yintercept = beta),
+    alpha = 0.5, size = 0.5
+  ) +
+  facet_grid(facet_vals, scales = "free_x", space = "free_x")
+p
+
+facet_vals <- paste0(c("D + V + k", "v + N"), collapse = " ~ ")
+
+cast_samples <- cur_samples %>%
+  dcast(file + iteration + v + D + V + N + K + alpha0 + gamma0 + alpha_fit + gamma_fit + n_replicates + batch_id + n_samples + method ~ k, value.var = "beta")
+
+colnames(cast_samples) <- make.names(colnames(cast_samples))
+
+plot_opts <- list(
+  "x" = "X1",
+  "y" = "X2",
+  "group" = "v",
+  "fill_type" = "gradient",
+  "h" = 0.1
+)
+ggcontours(cast_samples, plot_opts) +
+  facet_grid(method ~ V + N + D)
+
+ggsave("~/test.png", p)
