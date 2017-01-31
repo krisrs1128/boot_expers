@@ -56,5 +56,30 @@ if (tolower(fit_method) == "vb") {
 }
 
 ## ---- save ----
-output_path <- file.path(output_dir, paste0(fit_method, "-", gen_id))
-save(fit, file = paste0(output_path, ".RData"))
+output_path <- file.path(output_dir, paste0(fit_method, "-", gen_id, ".RData"))
+save(fit, file = output_path)
+
+## ---- update-metadata ----
+metadata <- data.frame(
+  "file" = output_path,
+  "D" = nrow(n),
+  "V" = ncol(n),
+  "N" = NA,
+  "K" = K,
+  "alpha0" = NA,
+  "gamma0" = NA,
+  "alpha_fit" = alpha,
+  "gamma_fit" = gamma,
+  "n_replicates" = NA,
+  "batch_id" = NA,
+  "n_samples" = n_samples
+)
+
+write.table(
+  metadata,
+  file = file.path(output_dir, "metadata.csv"),
+  append = TRUE,
+  sep = ",",
+  row.names = FALSE,
+  col.names = !file.exists(file.path(output_dir, "metadata.csv"))
+)
