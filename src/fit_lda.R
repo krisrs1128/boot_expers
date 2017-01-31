@@ -57,9 +57,6 @@ if (tolower(fit_method) == "vb") {
     stop("fit_method must be either 'gibbs' or 'vb'")
 }
 
-message(n_samples)
-message(dim(extract(fit)$beta))
-
 ## ---- save ----
 output_path <- file.path(
   output_dir,
