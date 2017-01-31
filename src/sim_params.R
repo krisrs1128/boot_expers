@@ -19,20 +19,47 @@ library("reshape2")
 ## ---- simulate ----
 params <- generate_params(D, K, V, alpha0, gamma0)
 dir.create(output_dir)
+beta_path <- file.path(output_dir, paste0("beta-", output_id, ".feather"))
 write_feather(
   melt(
     params$beta,
     varnames = c("v", "k"),
     value.name = "beta"
   ),
-  file.path(output_dir, paste0("beta-", output_id, ".feather"))
+  beta_path
 )
 
+theta_path <- file.path(output_dir, paste0("theta-", output_id, ".feather"))
 write_feather(
   melt(
     params$theta,
     varnames = c("i", "k"),
     value.name = "theta"
   ),
-  file.path(output_dir, paste0("theta-", output_id, ".feather"))
+  theta_path
+)
+
+## ---- update-metadata ----
+metadata <- data.frame(
+  "file" = c(beta_path, theta_path),
+  "D" = D,
+  "V" = V,
+  "N" = NA,
+  "K" = K,
+  "alpha0" = alpha0,
+  "gamma0" = gamma0,
+  "alpha_fit" = NA,
+  "gamma_fit" = NA,
+  "n_replicates" = NA,
+  "batch_id" = NA,
+  "n_samples" = NA
+)
+
+write.table(
+  metadata,
+  file = file.path(output_dir, "metadata.csv"),
+  append = TRUE,
+  sep = ",",
+  row.names = FALSE,
+  col.names = !file.exists(file.path(output_dir, "metadata.csv"))
 )
