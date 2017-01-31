@@ -67,6 +67,34 @@ for (i in seq_len(n_replicates)) {
     theta_boot <- posterior_mean(vb_fit$theta, c("i", "k")) %>%
         melt(varnames = c("i", "k"), value.name = "theta")
 
-    write_feather(beta_boot, file.path(output_dir, paste0("beta-boot-", fit_id, batch_id, i, ".feather")))
-    write_feather(theta_boot, file.path(output_dir, paste0("theta-boot-", fit_id, batch_id, i, ".feather")))
+    theta_path <- file.path(output_dir, paste0("theta-boot-", fit_id, batch_id, i, ".feather"))
+    beta_path <- file.path(output_dir, paste0("beta-boot-", fit_id, batch_id, i, ".feather"))
+    write_feather(beta_boot, beta_path)
+    write_feather(theta_boot, theta_path)
+
+    metadata <- data.frame(
+      "file" = c(theta_path, beta_path),
+      "D" = nrow(cur_data),
+      "V" = ncol(cur_data),
+      "N" = N,
+      "K" = ncol(beta_hat),
+      "alpha0" = NA,
+      "gamma0" = NA,
+      "alpha_fit" = alpha,
+      "gamma_fit" = gamma,
+      "n_replicates" = n_replicates,
+      "batch_id" = batch_id,
+      "n_samples" = n_samples,
+      "method" = "bootstrap"
+    )
+
+    metadata_path <- file.path(output_dir, "..", "metadata.csv")
+    write.table(
+      metadata,
+      file = metadata_path,
+      append = TRUE,
+      sep = ",",
+      row.names = FALSE,
+      col.names = !file.exists(metadata_path)
+    )
 }

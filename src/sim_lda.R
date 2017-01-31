@@ -28,10 +28,37 @@ theta <- read_feather(theta_path) %>%
   select(-i) %>%
   as.matrix()
 
-N <- generate_data(N, beta, theta) %>%
+n <- generate_data(N, beta, theta) %>%
   melt(varnames = c("i", "v"), value.name = "n")
 
+output_path <- file.path(output_dir, paste0("n-", output_id, ".feather"))
 write_feather(
-  data.table(N),
-  file.path(output_dir, paste0("n-", output_id, ".feather"))
+  data.table(n),
+  output_path
+)
+
+## ---- update-metadata ----
+metadata <- data.frame(
+  "file" = output_path,
+  "D" = nrow(n),
+  "V" = ncol(n),
+  "N" = N,
+  "K" = ncol(beta),
+  "alpha0" = NA,
+  "gamma0" = NA,
+  "alpha_fit" = NA,
+  "gamma_fit" = NA,
+  "n_replicates" = NA,
+  "batch_id" = NA,
+  "n_samples" = NA,
+  "method" = NA
+)
+
+write.table(
+  metadata,
+  file = file.path(output_dir, "metadata.csv"),
+  append = TRUE,
+  sep = ",",
+  row.names = FALSE,
+  col.names = !file.exists(file.path(output_dir, "metadata.csv"))
 )

@@ -12,6 +12,8 @@ n_samples <- as.integer(args[[5]])
 K <- as.integer(args[[6]])
 alpha <- as.numeric(args[[7]])
 gamma <- as.numeric(args[[8]])
+save(list = ls(all.names = TRUE), file = "~/input.rda")
+load("~/input.rda")
 
 ## ---- libraries ----
 library("rstan")
@@ -40,21 +42,55 @@ stan_data <- list(
 ## ---- fit-model ----
 if (tolower(fit_method) == "vb") {
     fit <- vb(
-        stan_model("../src/lda.stan"),
-        data = stan_data,
-        iter = n_samples
+      stan_model("../src/lda.stan"),
+      data = stan_data,
+      output_samples = n_samples
     )
 } else if (tolower(fit_method) == "gibbs") {
     fit <- stan(
-        "../src/lda.stan",
-        data = stan_data,
-        chains = 1,
-        iter = n_samples
+      "../src/lda.stan",
+      data = stan_data,
+      chains = 1,
+      warmup = n_samples,
+      iter = n_samples
     )
 } else {
     stop("fit_method must be either 'gibbs' or 'vb'")
 }
 
+message(n_samples)
+message(dim(extract(fit)$beta))
+
 ## ---- save ----
-output_path <- file.path(output_dir, paste0(fit_method, "-", gen_id))
-save(fit, file = paste0(output_path, ".RData"))
+output_path <- file.path(
+  output_dir,
+  paste0(fit_method, "-", gen_id, ".RData")
+)
+save(fit, file = output_path)
+
+## ---- update-metadata ----
+metadata <- data.frame(
+  "file" = output_path,
+  "D" = nrow(n),
+  "V" = ncol(n),
+  "N" = NA,
+  "K" = K,
+  "alpha0" = NA,
+  "gamma0" = NA,
+  "alpha_fit" = alpha,
+  "gamma_fit" = gamma,
+  "n_replicates" = NA,
+  "batch_id" = NA,
+  "n_samples" = n_samples,
+  "method" = fit_method
+)
+
+metadata_path <- file.path(output_dir, "metadata.csv")
+write.table(
+  metadata,
+  file = metadata_path,
+  append = TRUE,
+  sep = ",",
+  row.names = FALSE,
+  col.names = !file.exists(metadata_path)
+)
