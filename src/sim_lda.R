@@ -28,20 +28,20 @@ theta <- read_feather(theta_path) %>%
   select(-i) %>%
   as.matrix()
 
-N <- generate_data(N, beta, theta) %>%
+n <- generate_data(N, beta, theta) %>%
   melt(varnames = c("i", "v"), value.name = "n")
 
 output_path <- file.path(output_dir, paste0("n-", output_id, ".feather"))
 write_feather(
-  data.table(N),
+  data.table(n),
   output_path
 )
 
 ## ---- update-metadata ----
 metadata <- data.frame(
   "file" = output_path,
-  "D" = nrow(N),
-  "V" = ncol(N),
+  "D" = nrow(n),
+  "V" = ncol(n),
   "N" = N,
   "K" = ncol(beta),
   "alpha0" = NA,
@@ -50,7 +50,8 @@ metadata <- data.frame(
   "gamma_fit" = NA,
   "n_replicates" = NA,
   "batch_id" = NA,
-  "n_samples" = NA
+  "n_samples" = NA,
+  "method" = NA
 )
 
 write.table(
