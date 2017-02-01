@@ -41,6 +41,39 @@ feather_from_paths <- function(paths) {
   rbindlist(data, fill = TRUE)
 }
 
+#' Errors histogram
+#'
+#' Plot the histograms of errors associated with the scatterplots from the NMF fits.
+#'
+#' @param plot_data [data.frame] The data used to plot the error between truth
+#'   vs. estimate across all dimensions. See the output of
+#'   melt_reshaped_samples().
+#' @param facet_terms [character vector] The columns on which to facet_grid the
+#'   plot.
+#' @param n_bins [int] The number of bins in each histogram panel. Defaults to 75.
+#' @param alpha [numeric] The alpha transparency for the different factors.
+#' @param colors [character vector] The colors to use for each factor.
+#' @return hist_plot [ggplot] The ggplot object showing error histograms across
+#'   factors and simulation configurations.
+error_histograms <- function(plot_data,
+                             facet_terms = NULL,
+                             n_bins = 75,
+                             alpha = 0.7,
+                             colors = c("#d95f02", "#7570b3")) {
+  ggplot(plot_data) +
+    geom_histogram(
+      aes(x = sqrt(estimate) - sqrt(truth), fill = dimension, y = ..density..),
+      position = "identity", alpha = alpha, bins = n_bins
+    ) +
+    facet_grid(formula(paste(facet_terms, collapse = "~"))) +
+    scale_y_continuous(breaks = scales::pretty_breaks(3)) +
+    scale_fill_manual(values = colors) +
+    min_theme() +
+    theme(
+      legend.position = "bottom"
+    )
+}
+
 ## ---- paths ----
 output_path <- "/scratch/users/kriss1/output/boot_expers"
 metadata <- fread(file.path(output_path, "metadata.csv")) %>%
@@ -130,3 +163,19 @@ p <- ggcontours(combined, plot_opts) +
     size = 2, col = "#fc8d62"
   ) +
   facet_grid(method + N ~ V + D)
+
+## histograms of errors ##
+mcombined <- combined %>%
+  melt(
+    measure.vars = c("beta_1", "beta_2"),
+    variable.name = "dimension",
+    value.name = "estimate"
+  ) %>%
+  melt(
+    measure.vars = c("beta_truth_1", "beta_truth_2"),
+    variable.name = "dimension2",
+    value.name = "truth"
+  ) %>%
+  select(-dimension2)
+
+error_histograms(mcombined, c("method + N", "V + D"))
