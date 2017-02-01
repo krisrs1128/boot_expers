@@ -69,7 +69,7 @@ metadata <- data.frame(
   "file" = output_path,
   "D" = nrow(n),
   "V" = ncol(n),
-  "N" = NA,
+  "N" = sum(n) / nrow(n),
   "K" = K,
   "alpha0" = NA,
   "gamma0" = NA,
