@@ -1,233 +1,98 @@
 #! /usr/bin/env Rscript
 
-# File description -------------------------------------------------------------
+## File description ------------------------------------------------------------
+## Utilities for visualizing output from lda simulation pipeline.
+##
+## author: kriss1@stanford.edu
 
-#' Read bootstrap replicates into a single data.frame
-#'
-#' @param files [character vector] A vector of paths pointing to the
-#'   bootstrap replicates to read in and combine.
-#' @return data [data.frame] A data.frame with the combined data,
-#'   along with the file paths and bootstrap replicates associated
-#'   with each row.
-combine_replicates <- function(files) {
-  sapply(files, read_feather)
-
-  data <- list()
-  for (i in seq_along(files)) {
-    print_skip(i)
-
-    data[[i]] <- cbind(
-      file = files[i],
-      rep = i,
-      read_feather(files[i])
+## ---- data-reading ----
+cbind_list <- function(data_list, cbind_vals, cbind_name) {
+  ## bind together, not losing tracks of filename
+  for (i in seq_along(data_list)) {
+    if (nrow(data_list[[i]]) == 0) next
+    data_list[[i]] <- data.table(
+      cbind_vals[[i]],
+      data_list[[i]]
     )
+    colnames(data_list[[i]])[1] <- cbind_name
   }
-
-  do.call(rbind, data)
+  data_list
 }
 
-#' Plot points on a face of a high dimensional simplex
-#'
-#' @param p [matrix] An n x V matrix, whose rows are point on a V
-#'   dimensional simplex.
-#' @param coords [vector] A length 3 vector specifying the dimensions
-#'   to project the points onto.
-#' @return ggtern [ggtern object] A ggtern plot object of the points
-#'   on the specified
-simplex_proj <- function(p, coords) {
-  coords <- paste0("dim_", coords)
-  colnames(p) <- paste0("dim_", colnames(p))
-
-  ggtern(p) +
-    geom_point(aes_string(x = coords[1], y = coords[2], z = coords[3], col = "as.factor(dim_k)"),
-               size = .5, alpha = 0.5) +
-    scale_color_brewer(palette = "Set2") +
-    labs(col = "k") +
-    theme_nogrid()
+rdata_from_paths <- function(paths, param, var_names = NULL) {
+  data <- paths %>%
+    lapply(function(x) {
+      res <- rstan::extract(get(load(x)))
+      melt(res[[param]], varnames = var_names, value.name = "value")
+    }) %>%
+    cbind_list(paths, "file")
+  rbindlist(data)
 }
 
-#' Identify a permutation that aligns rows of two matrices
-#'
-#' One way to get confidence intervals for mixtures on the simplex is
-#' to first specify the cluster labels for each component, and then
-#' study each of these histograms on their own. This is different
-#' from, say, smoothing the mixture distribution and identifying
-#' modes.
-#'
-#' The approach taken here is to find the two rows with maximal
-#' correlation and put that in the required permutation. Then, remove
-#' those rows and repeat.
-#'
-#' @param X [numeric matrix] A matrix whose rows we want to align with
-#'   X.
-#' @param Z [numeric matrix] A matrix whose rows we want to align with
-#'   Z.
-#' @return pi_result [vector] A permutation such that X[pi_result, ] = Z
-#' (ideally).
-#' @examples
-#' X <- matrix(rnorm(100, mean = 4) ^ 2, 20, 5)
-#' pi <- sample(1:20)
-#' Z <- X[pi, ] + matrix(rnorm(100), 20, 5)
-#' pi_hat <- match_matrix(X, Z)
-#' cbind(pi_hat, pi)
-match_matrix <- function(X, Z) {
-  n <- nrow(X)
-  X_tilde <- X
-  Z_tilde <- Z
+feather_from_paths <- function(paths) {
+  ## read data into list
+  data <- paths %>%
+    lapply(read_feather) %>%
+    cbind_list(paths, "file")
 
-  rownames(X_tilde) <- seq_len(n)
-  rownames(Z_tilde) <- seq_len(n)
-  pi_result <- rep(0, n)
-
-  for (i in seq_len(n)) {
-    # get maximal correlation in remainding rows
-    rho <- cor(t(X_tilde), t(Z_tilde))
-    max_ix0 <- which(rho == max(rho), arr.ind = TRUE)
-
-    max_ix <- c(
-      as.integer(rownames(X_tilde)[max_ix0[1]]),
-      as.integer(rownames(Z_tilde)[max_ix0[2]])
-    )
-
-    # input to resulting permutation, and update rows
-    pi_result[max_ix[2]] <- max_ix[1]
-    X_tilde <- X_tilde[-max_ix0[1],, drop = F]
-    Z_tilde <- Z_tilde[-max_ix0[2],, drop = F]
-  }
-
-  pi_result
+  rbindlist(data, fill = TRUE)
 }
 
-#' Identify permutations to match multiple matrices with a preset one
+## ---- reshaping ----
+#' Melt reshaped samples
 #'
-#' This is a wrapper of match_matrix that aligns a large collection of
-#' melted matrices (Xs) to one preset one (Z).
+#' While for the scatter / contours figures, it's useful to have the dimensions
+#' as separate columns, we'll also want to the melted data when computing
+#' explicit errors. This takes the output of reshaped_... and melts it so that
+#' it's appropriate for histogramming the errors.
 #'
-#' @param Xs [data.frame] A collection of melted matrices. The
-#'   required columns are,
-#'     rep: which matrix replicate is it?
-#'     row: What row in the current matrix is it? This is what we will
-#'       permute.  col: What column in the current matrix is it?
-#' @param Z [matrix] This is the matrix to which we want to align the
-#'   X matrices with.
-#' @return pi_all [data.frame] The data.frame that specifies how to
-#'   permutate rows within each replicate, so that the rows match
-#'  as well as possible.
-match_matrices <- function(Xs, Z) {
-  colnames(Xs) <- c("rep", "row", "col", "value")
-  R <- max(Xs$rep)
+#' @param samples [data.frame] The wide samples data, usually the output of
+#'   reshape_all_samples.
+#' @return melted_samples [data.frame] The same data as samples, but with
+#'   different factor dimensions all stacked.
+#' @export
+melt_reshaped_samples <- function(samples) {
+  melted_samples <- samples %>%
+    gather(type, val, starts_with("value"), starts_with("truth")) %>%
+    separate("type", c("estimate_type", "dimension"), "\\_") %>%
+    spread(estimate_type, val) %>%
+    rename(estimate = value)
 
-  for (i in seq_len(R)) {
-    print_skip(i)
-
-    cur_ix <- which(Xs$rep == i)
-    cur_x <- Xs[cur_ix, ] %>%
-      dcast(row ~ col, value.var = "value") %>%
-      select(-row)
-
-    pi <- match_matrix(cur_x, Z)
-    Xs[cur_ix, "pi_ix"] <- cur_ix[pi]
-    Xs[cur_ix, "pi_row"] <- Xs[cur_ix[pi], "row"]
-  }
-  unique(Xs[, c("rep", "row", "pi_row", "pi_ix")])
+  melted_samples$dimension <- paste0("k=", melted_samples$dimension)
+  melted_samples
 }
 
-#' Plot many samples from theta
+## ---- plots ----
+#' Errors histogram
 #'
-#' Whether we are looking at bootstrap, gibbs, or variational bayes
-#' posterior samples, we need to be able to plot the different sampled
-#' thetas by document x cluster. This abstracts away that plot.
+#' Plot the histograms of errors associated with the scatterplots from the NMF fits.
 #'
-#' @param plot_data [list] A list of data.frames containing
-#'   information to plot. Contains the following slots:
-#'     $samples [data.frame] Data frame of all the sampled thetas, across
-#'       replicates. These will be displayed as a histogram, for each
-#'       document / cluster combination.
-#'     $truth [data.frame] The true theta values to display, as a
-#'       reference.
-#'     $fit [data.frame] The posterior mean, as a reference.
-#' @param aligned [bool] If the data have been aligned, we will shade in
-#'   colors accoridng to the cluster component. Otherwise, we will leave
-#'   black.
-#' @return p [ggplot] The ggplot object used to compare the sampled
-#'   and true thetas.
-theta_plot <- function(plot_data, aligned = FALSE) {
-  p <- ggplot() +
-    geom_histogram(data = plot_data$samples, aes(x = theta, fill = as.factor(k)),
-                   binwidth = 0.01, position = "identity", alpha = 0.8) +
-    geom_vline(data = plot_data$truth,
-               aes(xintercept = theta, col = as.factor(k)),
-               linetype = 1) +
-    facet_wrap(~n) +
-    scale_fill_brewer(palette = "Set2") +
-    scale_color_brewer(palette = "Set2") +
-    scale_y_continuous(breaks = scales::pretty_breaks(n = 2)) +
+#' @param plot_data [data.frame] The data used to plot the error between truth
+#'   vs. estimate across all dimensions. See the output of
+#'   melt_reshaped_samples().
+#' @param facet_terms [character vector] The columns on which to facet_grid the
+#'   plot.
+#' @param n_bins [int] The number of bins in each histogram panel. Defaults to 75.
+#' @param alpha [numeric] The alpha transparency for the different factors.
+#' @param colors [character vector] The colors to use for each factor.
+#' @return hist_plot [ggplot] The ggplot object showing error histograms across
+#'   factors and simulation configurations.
+error_histograms <- function(plot_data,
+                             facet_terms = NULL,
+                             n_bins = 75,
+                             alpha = 0.7,
+                             colors = c("#d95f02", "#7570b3")) {
+  ggplot(plot_data) +
+    geom_histogram(
+      aes(x = sqrt(estimate) - sqrt(truth), fill = dimension, y = ..density..),
+      position = "identity", alpha = alpha, bins = n_bins
+    ) +
+    facet_grid(formula(paste(facet_terms, collapse = "~"))) +
+    scale_y_continuous(breaks = scales::pretty_breaks(3)) +
+    scale_fill_manual(values = colors) +
+    min_theme() +
     theme(
-      panel.border = element_rect(fill = "transparent", size = 0.4),
-      panel.spacing = unit(0, "line"),
-      axis.text.x = element_blank()
+      legend.position = "bottom"
     )
-
-  if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit,
-                        aes(xintercept = theta, col = as.factor(k)),
-                        linetype = 2)
-  }
-  p + labs(fill = "k", col = "k")
 }
 
-#' Plot many samples from beta
-#'
-#' Whether we are looking at bootstrap, gibbs, or variational bayes
-#' posterior samples, we need to be able to plot the different sampled
-#' betas by document x cluster. This abstracts away that plot.
-#'
-#' @param plot_data [list] A list of data.frames containing
-#'   information to plot. Contains the following slots:
-#'     $samples [data.frame] Data frame of all the sampled betas, across
-#'       replicates. These will be displayed as a histogram, for each
-#'       document / cluster combination.
-#'     $truth [data.frame] The true beta values to display, as a
-#'       reference.
-#'     $fit [data.frame] The posterior mean, as a reference.
-#' @param aligned [bool] If the data have been aligned, we will shade in
-#'   colors accoridng to the cluster component. Otherwise, we will leave
-#'   black.
-#' @return p [ggplot] The ggplot object used to compare the sampled
-#'   and true betas.
-beta_plot <- function(plot_data, aligned = FALSE) {
-  p <- ggplot() +
-    geom_histogram(data = plot_data$samples, aes(x = value, fill = as.factor(k)),
-                   binwidth = 0.003, position = "identity", alpha = 0.8) +
-    geom_hline(yintercept = 0, size = 0.1, col = "#696969") +
-    geom_vline(data = plot_data$truth, aes(xintercept = value, col = as.factor(k)),
-             size = 0.5, linetype = 1) +
-    scale_y_continuous(expand = c(0, 0), breaks = scales::pretty_breaks(n = 2)) +
-    coord_flip() +
-    facet_grid(. ~ v) +
-    scale_fill_brewer(palette = "Set2") +
-    scale_color_brewer(palette = "Set2") +
-    theme(
-      panel.spacing = unit(0, "line"),
-      axis.text.x = element_blank()
-    )
-
-  if (!is.null(plot_data$fit)) {
-    p <- p + geom_vline(data = plot_data$fit, aes(xintercept = value, col = as.factor(k)),
-                        size = 0.5, linetype = 2)
-  }
-  p + labs(fill = "k", col = "k")
-}
-
-#' Helper function, to print every p^th iteration
-#'
-#' This is just so we can track our progress in slow loops
-#'
-#' @param i [integer] The current iteration
-#' @param p [integer] If p divides i, then we print i
-#' @return NULL
-print_skip <- function(i, p = 50) {
-  if (i %% p == 0) {
-    cat(sprintf("processing replicate %d\n", i))
-  }
-}
