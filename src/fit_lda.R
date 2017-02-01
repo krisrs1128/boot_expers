@@ -23,6 +23,7 @@ library("dplyr")
 library("data.table")
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
+set.seed(3141596)
 
 ## ---- get-data ----
 n <- read_feather(data_path) %>%

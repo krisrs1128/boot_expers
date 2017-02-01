@@ -25,6 +25,7 @@ source("../src/lda.R")
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 dir.create(output_dir)
+set.seed(3141596)
 
 ## ---- utils ----
 posterior_mean <- function(samples, dims) {

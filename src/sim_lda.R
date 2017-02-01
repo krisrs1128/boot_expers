@@ -16,6 +16,7 @@ library("feather")
 library("plyr")
 library("dplyr")
 library("data.table")
+set.seed(3141596)
 
 ## ---- simulate ----
 beta <- read_feather(beta_path) %>%

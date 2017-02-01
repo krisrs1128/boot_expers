@@ -15,6 +15,7 @@ gamma0 <- as.numeric(args[[7]])
 source("../src/lda.R")
 library("feather")
 library("reshape2")
+set.seed(3141596)
 
 ## ---- simulate ----
 params <- generate_params(D, K, V, alpha0, gamma0)
