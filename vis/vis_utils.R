@@ -160,40 +160,56 @@ match_matrix <- function(X, Z) {
   pi_result
 }
 
-experiment_pi <- function(x) {
-  estimate_cols <- grep("estimate", colnames(x))
-  truth_cols <- grep("truth", colnames(x))
-  match_matrix(
-    t(as.matrix(x[, estimate_cols])),
-    t(as.matrix(x[, truth_cols]))
-  ) %>%
-    data.frame()
+experiment_pi <- function(index, dimension, estimate, truth) {
+  x <- data.table(
+    index = index,
+    dimension = dimension,
+    estimate = estimate,
+    truth = truth
+  )
+  estimates <- x %>%
+    select(index, dimension, estimate) %>%
+    spread(index, estimate) %>%
+    select(-dimension) %>%
+    as.matrix()
+
+  truth <- x %>%
+    select(index, dimension, truth) %>%
+    spread(index, truth) %>%
+    select(-dimension) %>%
+    as.matrix()
+
+  data.frame(pi = match_matrix(estimates, truth))
 }
 
 align_experiment <- function(x) {
-  if (all(x$pi[[1]] == c(2, 1))) {
-    tmp <- x$value_1
-    x$value_1 <- x$value_2
-    x$value_2 <- tmp
+  if (any(is.na(x$pi))) {
+    warning("not aligning some experiments")
+    return(x)
   }
-  data.frame(x)
+
+  new_dimensions <- paste0("k=", x$pi)
+  x$dimension <- mapvalues(
+    x$dimension,
+    paste0("k=", sort(x$pi)),
+    new_dimensions
+  )
+  x
 }
 
-align_posteriors <- function(combined) {
-  pi_alignment <- combined %>%
+align_posteriors <- function(mcombined) {
+  pi_alignment <- mcombined %>%
     filter(method %in% c("gibbs", "vb")) %>%
-    group_by(v, D, V, N, K, n_samples, method) %>%
+    group_by(v, D, V, N, K, n_samples, method, alpha0, gamma0, dimension) %>%
     summarise(
-      truth_1 = truth_1[1],
-      truth_2 = truth_2[1],
-      estimate_1 = mean(value_1),
-      estimate_2 = mean(value_2)
+      truth = truth[1],
+      median_estimate = median(estimate)
     ) %>%
-    group_by(D, V, N, K, n_samples, method) %>%
-    do(pi = experiment_pi(.))
+    group_by(D, V, N, K, n_samples, method, alpha0, gamma0) %>%
+    do(experiment_pi(.$v, .$dimension, .$median_estimate, .$truth))
 
-  combined %>%
-    left_join(test2) %>%
+  tbl_df(mcombined) %>%
+    left_join(pi_alignment) %>%
     do(align_experiment(.))
 }
 
