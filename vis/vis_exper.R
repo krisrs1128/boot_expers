@@ -24,15 +24,26 @@ output_path <- "/scratch/users/kriss1/output/boot_expers"
 metadata <- fread(file.path(output_path, "metadata.csv")) %>%
   unique()
 
-## ---- get-truth ----
+## ---- beta-samples ----
 beta <- get_truth_data(metadata, "beta")
-
-## ---- get-samples ----
 combined <- get_samples(metadata, "beta") %>%
   full_join(get_bootstraps(metadata, "beta")) %>%
   left_join(beta)
 
 ## ---- beta-alignment ----
+combined <- align_posteriors(combined)
+mcombined <- melt_reshaped_samples(combined)
+
+head(combined)
+
+
+
+
+
+
+
+
+
 swap_ix <- c(
   which(combined$V == 10 & combined$D == 20 & combined$method == "gibbs"),
   which(combined$V == 10 & combined$D == 40 & combined$method == "gibbs"),
@@ -44,13 +55,18 @@ swap_ix <- c(
 tmp <- combined$value_1[swap_ix]
 combined$value_1[swap_ix] <- combined$value_2[swap_ix]
 combined$value_2[swap_ix] <- tmp
-mcombined <- melt_reshaped_samples(combined)
 
-## ---- boxplots ----
+## ---- beta-boxplots ----
 experiment_boxplots(mcombined)
 
-## ---- contours ----
+## ---- beta-contours ----
 experiment_contours(combined)
 
-## ---- histograms ----
+## ---- beta-histograms ----
 error_histograms(mcombined, c("method + N", "V + D"))
+
+## ---- theta-samples ----
+theta <- get_truth_data(metadata, "theta")
+combined <- get_samples(metadata, "theta") %>%
+  full_join(get_bootstraps(metadata, "theta")) %>%
+  left_join(theta)
