@@ -108,6 +108,95 @@ get_bootstraps <- function(metadata, param) {
     select(-file, -starts_with("alpha"), -starts_with("gamma"))
 }
 
+#' Identify a permutation that aligns rows of two matrices
+#'
+#' One way to get confidence intervals for mixtures on the simplex is
+#' to first specify the cluster labels for each component, and then
+#' study each of these histograms on their own. This is different
+#' from, say, smoothing the mixture distribution and identifying
+#' modes.
+#'
+#' The approach taken here is to find the two rows with maximal
+#' correlation and put that in the required permutation. Then, remove
+#' those rows and repeat.
+#'
+#' @param X [numeric matrix] A matrix whose rows we want to align with
+#'   X.
+#' @param Z [numeric matrix] A matrix whose rows we want to align with
+#'   Z.
+#' @return pi_result [vector] A permutation such that X[pi_result, ] = Z
+#' (ideally).
+#' @examples
+#' X <- matrix(rnorm(100, mean = 4) ^ 2, 20, 5)
+#' pi <- sample(1:20)
+#' Z <- X[pi, ] + matrix(rnorm(100), 20, 5)
+#' pi_hat <- match_matrix(X, Z)
+#' cbind(pi_hat, pi)
+match_matrix <- function(X, Z) {
+  n <- nrow(X)
+  X_tilde <- X
+  Z_tilde <- Z
+
+  rownames(X_tilde) <- seq_len(n)
+  rownames(Z_tilde) <- seq_len(n)
+  pi_result <- rep(0, n)
+
+  for (i in seq_len(n)) {
+    # get maximal correlation in remainding rows
+    rho <- cor(t(X_tilde), t(Z_tilde))
+    max_ix0 <- which(rho == max(rho), arr.ind = TRUE)
+
+    max_ix <- c(
+      as.integer(rownames(X_tilde)[max_ix0[1]]),
+      as.integer(rownames(Z_tilde)[max_ix0[2]])
+    )
+
+    # input to resulting permutation, and update rows
+    pi_result[max_ix[2]] <- max_ix[1]
+    X_tilde <- X_tilde[-max_ix0[1],, drop = F]
+    Z_tilde <- Z_tilde[-max_ix0[2],, drop = F]
+  }
+
+  pi_result
+}
+
+experiment_pi <- function(x) {
+  estimate_cols <- grep("estimate", colnames(x))
+  truth_cols <- grep("truth", colnames(x))
+  match_matrix(
+    t(as.matrix(x[, estimate_cols])),
+    t(as.matrix(x[, truth_cols]))
+  ) %>%
+    data.frame()
+}
+
+align_experiment <- function(x) {
+  if (all(x$pi[[1]] == c(2, 1))) {
+    tmp <- x$value_1
+    x$value_1 <- x$value_2
+    x$value_2 <- tmp
+  }
+  data.frame(x)
+}
+
+align_posteriors <- function(combined) {
+  pi_alignment <- combined %>%
+    filter(method %in% c("gibbs", "vb")) %>%
+    group_by(v, D, V, N, K, n_samples, method) %>%
+    summarise(
+      truth_1 = truth_1[1],
+      truth_2 = truth_2[1],
+      estimate_1 = mean(value_1),
+      estimate_2 = mean(value_2)
+    ) %>%
+    group_by(D, V, N, K, n_samples, method) %>%
+    do(pi = experiment_pi(.))
+
+  combined %>%
+    left_join(test2) %>%
+    do(align_experiment(.))
+}
+
 ## ---- reshaping ----
 #' Melt reshaped samples
 #'
@@ -177,7 +266,8 @@ experiment_boxplots <- function(mcombined) {
     "x" = "v",
     "y" = "sqrt(estimate)",
     "fill" = "method",
-    "linetype" = "as.factor(N)"
+    "linetype" = "as.factor(N)",
+    "theme_opts" = list("border_size" = .4)
   )
 
   ggboxplot(mcombined, plot_opts) +
@@ -204,17 +294,18 @@ experiment_contours <- function(combined) {
     "fill_type" = "gradient",
     "h" = 0.05
   )
-  p <- ggcontours(combined, plot_opts) +
+
+  ggcontours(combined, plot_opts) +
     geom_text(
+      data = combined %>% filter(iteration == 1),
       aes(x = sqrt(truth_1), y = sqrt(truth_2), label = v),
-      size = 2
+      size = 4
     ) +
     geom_text(
       data = combined %>%
         group_by(v, D, V, N, K, method) %>%
         summarise(value_mean_1 = mean(value_1), value_mean_2 = mean(value_2)),
       aes(x = sqrt(value_mean_1), y = sqrt(value_mean_2), label = v),
-      size = 2, col = "#fc8d62"
-    ) +
+      size = 1, col = "#fc8d62" ) +
     facet_grid(method + N ~ V + D)
 }
