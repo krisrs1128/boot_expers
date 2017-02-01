@@ -84,6 +84,16 @@ class LDAExperiment(luigi.WrapperTask):
 
         n_batches = int(self.conf.get("expers", "n_batches"))
         n_samples = int(self.conf.get("expers", "n_samples"))
+        batches = (list(range(n_batches)) * (int(n_samples / n_batches) + 1))[:n_samples]
+        batches.sort()
+        logger.info(batches)
+        logger.info(n_samples)
+        logger.info(len(batches))
+        batch_endpoints = [0] + [
+            i for i in list(range(n_samples - 1))
+            if batches[i] != batches[i + 1]
+        ]
+        logger.info(batch_endpoints)
 
         tasks = []
         for (k, v) in enumerate(experiment):
@@ -93,8 +103,9 @@ class LDAExperiment(luigi.WrapperTask):
                 str(v["alpha0"]), str(v["gamma0"])
             ]
 
-            for batch_id in range(n_batches):
-                boot_params = [str(int(n_samples / n_batches)), str(batch_id)] + \
+            for i, _ in enumerate(batch_endpoints[:-1]):
+                logger.info(batch_endpoints[i])
+                boot_params = [batch_endpoints[i], batch_endpoints[i + 1] - 1] + \
                               data_params
                 tasks.append(LDABoot(*boot_params))
 
@@ -112,13 +123,8 @@ class LDABoot(luigi.Task):
     If the original VB fit has not been generated, this will launch that task.
 
     Arguments:
-      n_replicates (int): The number of bootstrap replicates which we want to
-        generate in this particular task. This will usually be less than the
-        total number of replicates we want overall, because tasks can be
-        parallelized, while code within tasks cannot.
-      batch_id (int): The current batch among the larger collection of
-        bootstrap batches. This helps us identify which of the bootstrapping
-        processes we're in, since there are usually several in parallel.
+      start_ix (int): The start index for the current bootstrapping iterations
+      end_ix (int): The end index for the current bootstrapping iterations
       K_fit (int): How many topics will we tell LDA to use when fitting?
       alpha_fit (float): What is the theta parameter prior we should use
         across all coordinates, for fitting?
@@ -136,8 +142,8 @@ class LDABoot(luigi.Task):
     Attributes:
         See arguments
     """
-    n_replicates = luigi.Parameter()
-    batch_id = luigi.Parameter()
+    start_ix = luigi.Parameter()
+    end_ix = luigi.Parameter()
     K_fit = luigi.Parameter()
     alpha_fit = luigi.Parameter()
     gamma_fit = luigi.Parameter()
@@ -162,9 +168,8 @@ class LDABoot(luigi.Task):
         run_cmd = [
             "Rscript", self.conf.get("expers", "boot_script"),
             os.path.join(self.conf.get("expers", "output_dir"), "bootstraps"),
-            self.batch_id, fit_id(self), input_path, self.N, self.alpha0,
-            self.gamma0, self.n_replicates,
-            self.conf.get("expers", "n_samples")
+            self.start_ix, self.end_ix, fit_id(self), input_path, self.N,
+            self.alpha0, self.gamma0, self.conf.get("expers", "n_samples")
         ]
         run_and_check(run_cmd)
 
@@ -174,8 +179,8 @@ class LDABoot(luigi.Task):
             "bootstraps"
         )
         output_base = [
-            "boot-" + fit_id(self) + str(self.batch_id) + str(i) + ".feather"
-            for i in range(int(self.n_replicates))
+            "boot-" + fit_id(self) + str(i) + ".feather"
+            for i in range(int(self.start_ix), int(self.end_ix))
         ]
 
         theta_paths = [luigi.LocalTarget(os.path.join(output_dir, "theta-" + s)) for s in output_base]
