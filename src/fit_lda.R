@@ -75,10 +75,9 @@ metadata <- data.frame(
   "gamma0" = NA,
   "alpha_fit" = alpha,
   "gamma_fit" = gamma,
-  "n_replicates" = NA,
-  "batch_id" = NA,
   "n_samples" = n_samples,
-  "method" = fit_method
+  "method" = fit_method,
+  "iteration" = NA
 )
 
 metadata_path <- file.path(output_dir, "metadata.csv")
