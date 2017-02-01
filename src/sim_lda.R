@@ -48,10 +48,9 @@ metadata <- data.frame(
   "gamma0" = NA,
   "alpha_fit" = NA,
   "gamma_fit" = NA,
-  "n_replicates" = NA,
-  "batch_id" = NA,
   "n_samples" = NA,
-  "method" = NA
+  "method" = NA,
+  "iteration" = NA
 )
 
 write.table(
