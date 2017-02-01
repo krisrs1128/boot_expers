@@ -4,6 +4,7 @@ library("feather")
 library("data.table")
 library("plyr")
 library("dplyr")
+library("tidyr")
 library("rstan")
 library("ggplot2")
 library("ggscaffold")
@@ -25,7 +26,7 @@ cbind_list <- function(data_list, cbind_vals, cbind_name) {
 rdata_from_paths <- function(paths, param, var_names = NULL) {
   data <- paths %>%
     lapply(function(x) {
-      res <- extract(get(load(x)))
+      res <- rstan::extract(get(load(x)))
       melt(res[[param]], varnames = var_names, value.name = "value")
     }) %>%
     cbind_list(paths, "file")
@@ -88,19 +89,12 @@ error_histograms <- function(plot_data,
 #' @export
 melt_reshaped_samples <- function(samples) {
   melted_samples <- samples %>%
-    melt(
-      variable.name = "dimension",
-      value.name = "estimate",
-      measure.vars = c("value_1", "value_2")
-    ) %>%
-    melt(
-      variable.name = "truth_dimension",
-      measure.vars = c("truth_1", "truth_2"),
-      value.name = "truth"
-    )
+    gather(type, val, starts_with("value"), starts_with("truth")) %>%
+    separate("type", c("estimate_type", "dimension"), "\\_") %>%
+    spread(estimate_type, val) %>%
+    rename(estimate = value)
 
-  melted_samples$truth_dimension <- NULL
-  melted_samples$dimension <- gsub("value_", "k=", melted_samples$dimension)
+  melted_samples$dimension <- paste0("k=", melted_samples$dimension)
   melted_samples
 }
 
@@ -135,8 +129,9 @@ samples_paths <- metadata %>%
 samples <- rdata_from_paths(samples_paths, "beta", c("iteration", "k", "v")) %>%
   mutate(k = paste0("value_", k)) %>%
   dcast(file + iteration + v ~ k) %>%
-  left_join(metadata) %>%
-  select(-iteration, -file, -alpha0, -gamma0, -n_replicates, -batch_id)
+  left_join(metadata, by = "file") %>%
+  mutate(iteration = pmin(iteration.x, iteration.y, na.rm = TRUE)) %>%
+  select(-file, -iteration.x, -iteration.y, -starts_with("alpha"), -starts_with("gamma"))
 
 ## ---- bootstrap-samples ----
 bootstrap_paths <- metadata %>%
@@ -151,42 +146,43 @@ bootstraps <- feather_from_paths(bootstrap_paths) %>%
   mutate(k = paste0("value_", k)) %>%
   dcast(file + v ~ k) %>%
   left_join(metadata) %>%
-  select(-file, -alpha0, -gamma0, -n_replicates, -batch_id)
+  select(-file, -starts_with("alpha"), -starts_with("gamma"))
 
 ## ---- combined-data ----
 combined <- samples %>%
-  left_join(bootstraps) %>%
+  full_join(bootstraps) %>%
   left_join(truth_data)
-mcombined <- melt_reshaped_samples(combined) 
 
 ## ---- manual-alignment ----
 swap_ix <- c(
   which(combined$V == 10 & combined$D == 20 & combined$method == "gibbs"),
   which(combined$V == 10 & combined$D == 40 & combined$method == "gibbs"),
   which(combined$V == 15 & combined$D == 30 & combined$method == "vb"),
-  which(combined$V == 10 & combined$D == 30 & combined$method == "vb")
-  which(combined$V == 10 & combined$D == 20 & combined$method == "vb")
+  which(combined$V == 10 & combined$D == 30 & combined$method == "vb"),
+  which(combined$V == 10 & combined$D == 20 & combined$method == "vb"),
   which(combined$V == 15 & combined$D == 20 & combined$method == "vb")
 )
 tmp <- combined$value_1[swap_ix]
 combined$value_1[swap_ix] <- combined$value_2[swap_ix]
 combined$value_2[swap_ix] <- tmp
+mcombined <- melt_reshaped_samples(combined)
 
 ## ---- visualize ----
 plot_opts <- list(
   "x" = "v",
-  "y" = "value",
+  "y" = "sqrt(estimate)",
   "fill" = "method",
-  "linetype" = "as.factor(N)",
-  "color" = "D"
+  "linetype" = "as.factor(N)"
 )
 
-p <- ggboxplot(combined %>% top_n(1000), plot_opts) +
+p <- ggboxplot(mcombined, plot_opts) +
   geom_hline(
-    aes(yintercept = truth),
+    data = mcombined,
+    aes(yintercept = sqrt(truth)),
     alpha = 0.5, size = 0.5
   ) +
-  facet_grid(D + k ~ V + v, scales = "free_x", space = "free_x")
+  scale_x_discrete(drop = F) +
+  facet_grid(D + dimension ~ V + v, scales = "free_x", space = "free_x")
 
 plot_opts <- list(
   "x" = "sqrt(value_1)",
@@ -208,5 +204,4 @@ p <- ggcontours(combined, plot_opts) +
     size = 2, col = "#fc8d62"
   ) +
   facet_grid(method + N ~ V + D)
-ggsave("~/test.png", p)
 error_histograms(mcombined, c("method + N", "V + D"))
