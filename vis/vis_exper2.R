@@ -6,6 +6,7 @@ library("plyr")
 library("dplyr")
 library("rstan")
 library("ggplot2")
+library("ggscaffold")
 
 ## ---- utils ----
 cbind_list <- function(data_list, cbind_vals, cbind_name) {
@@ -55,19 +56,24 @@ truth_paths <- metadata %>%
   unlist()
 
 truth_data <- feather_from_paths(truth_paths) %>%
-  left_join(metadata)
+  mutate(k = paste0("beta_truth_", k)) %>%
+  dcast(file + v ~ k) %>%
+  left_join(metadata) %>%
+  select(v, starts_with("beta_truth"), D, V, K, alpha0, gamma0)
 
 ## ---- posterior-samples ----
 samples_paths <- metadata %>%
   filter(
-    method %in% c("vb", "gibbs"),
-    is.na(N)
+    method %in% c("vb", "gibbs")
   ) %>%
   select(file) %>%
   unlist()
 
 samples <- rdata_from_paths(samples_paths, "beta", c("iteration", "k", "v")) %>%
-  left_join(metadata)
+  mutate(k = paste0("beta_", k)) %>%
+  dcast(file + iteration + v ~ k) %>%
+  left_join(metadata) %>%
+  select(-iteration, -file, -alpha0, -gamma0, -n_replicates, -batch_id)
 
 ## ---- bootstrap-samples ----
 bootstrap_paths <- metadata %>%
@@ -79,55 +85,48 @@ bootstrap_paths <- metadata %>%
   unlist()
 
 bootstraps <- feather_from_paths(bootstrap_paths) %>%
-  left_join(metadata)
-bootstraps$iteration <- NA
-samples <- rbind(samples, bootstraps)
+  mutate(k = paste0("beta_", k)) %>%
+  dcast(file + v ~ k) %>%
+  left_join(metadata) %>%
+  select(-file, -alpha0, -gamma0, -n_replicates, -batch_id)
+
+combined <- samples %>%
+  left_join(bootstraps) %>%
+  left_join(truth_data)
 
 ## ---- visualize ----
-library("ggscaffold")
 plot_opts <- list(
   "x" = "v",
   "y" = "beta",
   "fill" = "method",
+  "linetype" = "as.factor(N)",
   "color" = "D"
 )
 
-merge_boxplot_opts(plot_opts)
-
-cur_samples <- samples
-v_order <- truth_data %>%
-  group_by(v) %>%
-  summarise(m_beta = max(beta)) %>%
-  arrange(desc(m_beta)) %>%
-  select(v) %>%
-  unlist()
-
-cur_samples$v <- factor(cur_samples$v)
-truth_data$v <- factor(truth_data$v)
-p <- ggboxplot(cur_samples, plot_opts) +
+p <- ggboxplot(combined %>% top_n(1000), plot_opts) +
   geom_hline(
-    data = truth_data,
-    aes(yintercept = beta),
+    aes(yintercept = beta_truth),
     alpha = 0.5, size = 0.5
   ) +
-  facet_grid(facet_vals, scales = "free_x", space = "free_x")
-p
-
-facet_vals <- paste0(c("D + V + k", "v + N"), collapse = " ~ ")
-
-cast_samples <- cur_samples %>%
-  dcast(file + iteration + v + D + V + N + K + alpha0 + gamma0 + alpha_fit + gamma_fit + n_replicates + batch_id + n_samples + method ~ k, value.var = "beta")
-
-colnames(cast_samples) <- make.names(colnames(cast_samples))
+  facet_grid(D + k ~ V + v, scales = "free_x", space = "free_x")
 
 plot_opts <- list(
-  "x" = "X1",
-  "y" = "X2",
+  "x" = "sqrt(beta_1)",
+  "y" = "sqrt(beta_2)",
   "group" = "v",
   "fill_type" = "gradient",
-  "h" = 0.1
+  "h" = 0.05
 )
-ggcontours(cast_samples, plot_opts) +
-  facet_grid(method ~ V + N + D)
-
-ggsave("~/test.png", p)
+p <- ggcontours(combined, plot_opts) +
+  geom_text(
+    aes(x = sqrt(beta_truth_1), y = sqrt(beta_truth_2), label = v),
+    size = 2
+  ) +
+  geom_text(
+    data = combined %>%
+      group_by(v, D, V, N, K, method) %>%
+      summarise(beta_mean_1 = mean(beta_1), beta_mean_2 = mean(beta_2)),
+    aes(x = sqrt(beta_mean_1), y = sqrt(beta_mean_2), label = v),
+    size = 2, col = "#fc8d62"
+  ) +
+  facet_grid(method + N ~ V + D)
