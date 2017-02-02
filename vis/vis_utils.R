@@ -198,18 +198,44 @@ align_experiment <- function(x) {
 }
 
 align_posteriors <- function(mcombined) {
+  inv_grouping_cols <- c("iteration", "truth", "estimate")
   pi_alignment <- mcombined %>%
-    filter(method %in% c("gibbs", "vb")) %>%
-    group_by(v, D, V, N, K, n_samples, method, alpha0, gamma0, dimension) %>%
+    ## first get estimates for beta, using all the iterations
+    group_by_(
+      .dots = setdiff(colnames(mcombined), inv_grouping_cols)
+    ) %>%
     summarise(
       truth = truth[1],
       median_estimate = median(estimate)
     ) %>%
-    group_by(D, V, N, K, n_samples, method, alpha0, gamma0) %>%
+
+    ## then align the estimates with the truth
+    group_by_(
+      .dots = setdiff(colnames(mcombined), c("median_estimate", inv_grouping_cols))
+    ) %>%
     do(pi = experiment_pi(.$v, .$dimension, .$median_estimate, .$truth))
 
   tbl_df(mcombined) %>%
     left_join(pi_alignment) %>%
+    group_by(
+      .dots = setdiff(colnames(mcombined), inv_grouping_cols)
+    )
+    do(align_experiment(.))
+}
+
+align_bootstraps <- function(mcombined) {
+  inv_grouping_cols <- c("truth", "estimate", "dimension")
+  pi_alignment <- mcombined %>%
+    group_by_(
+      .dots = setdiff(colnames(mcombined), c("v", inv_grouping_cols))
+    ) %>%
+    do(pi = experiment_pi(.$v, .$dimension, .$estimate, .$truth))
+
+  tbl_df(mcombined) %>%
+    left_join(pi_alignment) %>%
+    group_by_(
+      .dots = setdiff(colnames(mcombined), inv_grouping_cols)
+    ) %>%
     do(align_experiment(.))
 }
 

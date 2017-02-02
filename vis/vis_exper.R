@@ -34,7 +34,10 @@ combined <- get_samples(metadata, "beta") %>%
 
 ## ---- beta-alignment ----
 mcombined <- melt_reshaped_samples(combined)
-mcombined <- align_posteriors(mcombined)
+mcombined <- list(
+  align_posteriors(mcombined %>% filter(method %in% c("vb", "gibbs"))),
+  align_bootstraps(mcombined %>% filter(method == "bootstrap"))
+)
 
 mcombined %>% head() %>% data.frame()
 mcombined2 %>% head() %>% data.frame()
