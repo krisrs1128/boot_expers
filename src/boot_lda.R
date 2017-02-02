@@ -4,14 +4,15 @@
 ## Simulate parametric bootstrap samples from a fitted LDA model
 
 args <- commandArgs(trailingOnly = TRUE)
+print(args)
 output_dir <- args[[1]]
-batch_id <- args[[2]]
-fit_id <- args[[3]]
-input_path <- args[[4]]
-N <- as.integer(args[[5]])
-alpha <- as.numeric(args[[6]])
-gamma <- as.numeric(args[[7]])
-n_replicates <- as.integer(args[[8]])
+start_iter <- as.integer(args[[2]])
+end_iter <- as.integer(args[[3]])
+fit_id <- args[[4]]
+input_path <- args[[5]]
+N <- as.integer(args[[6]])
+alpha <- as.numeric(args[[7]])
+gamma <- as.numeric(args[[8]])
 n_samples <- as.integer(args[[9]])
 
 ## ---- libraries ----
@@ -24,6 +25,7 @@ source("../src/lda.R")
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 dir.create(output_dir)
+set.seed(3141596)
 
 ## ---- utils ----
 posterior_mean <- function(samples, dims) {
@@ -44,7 +46,7 @@ beta_hat <- posterior_mean(samples$beta, c("v", "k"))
 theta_hat <- posterior_mean(aperm(samples$theta, c(1, 3, 2)), c("i", "k"))
 
 ## ---- bootstrap-replicaates ----
-for (i in seq_len(n_replicates)) {
+for (i in seq(start_iter, end_iter)) {
     cur_data <- generate_data(N, theta_hat, beta_hat)
     stan_data <- list(
        "n" = cur_data,
@@ -67,8 +69,8 @@ for (i in seq_len(n_replicates)) {
     theta_boot <- posterior_mean(vb_fit$theta, c("i", "k")) %>%
         melt(varnames = c("i", "k"), value.name = "theta")
 
-    theta_path <- file.path(output_dir, paste0("theta-boot-", fit_id, batch_id, i, ".feather"))
-    beta_path <- file.path(output_dir, paste0("beta-boot-", fit_id, batch_id, i, ".feather"))
+    theta_path <- file.path(output_dir, paste0("theta-boot-", fit_id, i, ".feather"))
+    beta_path <- file.path(output_dir, paste0("beta-boot-", fit_id, i, ".feather"))
     write_feather(beta_boot, beta_path)
     write_feather(theta_boot, theta_path)
 
@@ -82,10 +84,9 @@ for (i in seq_len(n_replicates)) {
       "gamma0" = NA,
       "alpha_fit" = alpha,
       "gamma_fit" = gamma,
-      "n_replicates" = n_replicates,
-      "batch_id" = batch_id,
       "n_samples" = n_samples,
-      "method" = "bootstrap"
+      "method" = "bootstrap",
+      "iteration" = i
     )
 
     metadata_path <- file.path(output_dir, "..", "metadata.csv")

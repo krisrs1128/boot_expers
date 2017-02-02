@@ -16,6 +16,7 @@ library("feather")
 library("plyr")
 library("dplyr")
 library("data.table")
+set.seed(3141596)
 
 ## ---- simulate ----
 beta <- read_feather(beta_path) %>%
@@ -28,7 +29,7 @@ theta <- read_feather(theta_path) %>%
   select(-i) %>%
   as.matrix()
 
-n <- generate_data(N, beta, theta) %>%
+n <- generate_data(N, theta, beta) %>%
   melt(varnames = c("i", "v"), value.name = "n")
 
 output_path <- file.path(output_dir, paste0("n-", output_id, ".feather"))
@@ -40,18 +41,17 @@ write_feather(
 ## ---- update-metadata ----
 metadata <- data.frame(
   "file" = output_path,
-  "D" = nrow(n),
-  "V" = ncol(n),
+  "D" = max(n$i),
+  "V" = max(n$v),
   "N" = N,
   "K" = ncol(beta),
   "alpha0" = NA,
   "gamma0" = NA,
   "alpha_fit" = NA,
   "gamma_fit" = NA,
-  "n_replicates" = NA,
-  "batch_id" = NA,
   "n_samples" = NA,
-  "method" = NA
+  "method" = NA,
+  "iteration" = NA
 )
 
 write.table(
