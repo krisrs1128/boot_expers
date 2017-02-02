@@ -54,7 +54,7 @@ experiment_contours(combined)
 error_histograms(mcombined, c("method + N", "V + D"))
 
 ## ---- theta-samples ----
-theta <- get_truth_data(metadata, "theta")
+theta <- get_truth_data(metadata, "theta", "i")
 combined <- get_samples(metadata, "theta") %>%
   full_join(get_bootstraps(metadata, "theta")) %>%
   left_join(theta)
