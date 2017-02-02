@@ -22,45 +22,34 @@ source("./vis_utils.R")
 ## ---- paths ----
 output_path <- "/scratch/users/kriss1/output/boot_expers"
 metadata <- fread(file.path(output_path, "metadata.csv")) %>%
-  unique()
+  unique() %>%
+  head(50)
 
 ## ---- beta-samples ----
 beta <- get_truth_data(metadata, "beta")
 combined <- get_samples(metadata, "beta") %>%
   full_join(get_bootstraps(metadata, "beta")) %>%
-  left_join(beta)
+  left_join(beta) %>%
+  setDT()
 
 ## ---- beta-alignment ----
-combined <- align_posteriors(combined)
 mcombined <- melt_reshaped_samples(combined)
+mcombined <- align_posteriors(mcombined)
 
-head(combined)
+mcombined %>% head() %>% data.frame()
+mcombined2 %>% head() %>% data.frame()
 
-
-
-
-
-
-
-
-
-swap_ix <- c(
-  which(combined$V == 10 & combined$D == 20 & combined$method == "gibbs"),
-  which(combined$V == 10 & combined$D == 40 & combined$method == "gibbs"),
-  which(combined$V == 15 & combined$D == 30 & combined$method == "vb"),
-  which(combined$V == 10 & combined$D == 30 & combined$method == "vb"),
-  which(combined$V == 10 & combined$D == 20 & combined$method == "vb"),
-  which(combined$V == 15 & combined$D == 20 & combined$method == "vb")
-)
-tmp <- combined$value_1[swap_ix]
-combined$value_1[swap_ix] <- combined$value_2[swap_ix]
-combined$value_2[swap_ix] <- tmp
+combined <- mcombined %>%
+  gather(type, value, truth, estimate) %>%
+  unite(temp, type, dimension) %>%
+  spread(temp, value)
 
 ## ---- beta-boxplots ----
 experiment_boxplots(mcombined)
 
 ## ---- beta-contours ----
-experiment_contours(combined)
+p <- experiment_contours(combined)
+ggsave("~/test.png", p)
 
 ## ---- beta-histograms ----
 error_histograms(mcombined, c("method + N", "V + D"))

@@ -161,12 +161,13 @@ match_matrix <- function(X, Z) {
 }
 
 experiment_pi <- function(index, dimension, estimate, truth) {
-  x <- data.table(
-    index = index,
-    dimension = dimension,
-    estimate = estimate,
-    truth = truth
+  x <- data.frame(
+    "index" = index,
+    "dimension" = dimension,
+    "estimate" = estimate,
+    "truth" = truth
   )
+
   estimates <- x %>%
     select(index, dimension, estimate) %>%
     spread(index, estimate) %>%
@@ -179,21 +180,20 @@ experiment_pi <- function(index, dimension, estimate, truth) {
     select(-dimension) %>%
     as.matrix()
 
-  data.frame(pi = match_matrix(estimates, truth))
+  match_matrix(estimates, truth)
 }
 
 align_experiment <- function(x) {
-  if (any(is.na(x$pi))) {
+  pi <- x$pi[[1]]
+  if (any(is.na(pi))) {
     warning("not aligning some experiments")
     return(x)
   }
 
-  new_dimensions <- paste0("k=", x$pi)
-  x$dimension <- mapvalues(
-    x$dimension,
-    paste0("k=", sort(x$pi)),
-    new_dimensions
-  )
+  tmp <- x$estimate
+  for (i in seq_along(pi)) {
+    x$estimate[x$dimension == pi[i]] <- tmp[x$dimension == i]
+  }
   x
 }
 
@@ -206,7 +206,7 @@ align_posteriors <- function(mcombined) {
       median_estimate = median(estimate)
     ) %>%
     group_by(D, V, N, K, n_samples, method, alpha0, gamma0) %>%
-    do(experiment_pi(.$v, .$dimension, .$median_estimate, .$truth))
+    do(pi = experiment_pi(.$v, .$dimension, .$median_estimate, .$truth))
 
   tbl_df(mcombined) %>%
     left_join(pi_alignment) %>%
@@ -227,14 +227,11 @@ align_posteriors <- function(mcombined) {
 #'   different factor dimensions all stacked.
 #' @export
 melt_reshaped_samples <- function(samples) {
-  melted_samples <- samples %>%
+  samples %>%
     gather(type, val, starts_with("value"), starts_with("truth")) %>%
     separate("type", c("estimate_type", "dimension"), "\\_") %>%
     spread(estimate_type, val) %>%
     rename(estimate = value)
-
-  melted_samples$dimension <- paste0("k=", melted_samples$dimension)
-  melted_samples
 }
 
 ## ---- plots ----
@@ -304,8 +301,8 @@ experiment_boxplots <- function(mcombined) {
 #'   configurations.
 experiment_contours <- function(combined) {
   plot_opts <- list(
-    "x" = "sqrt(value_1)",
-    "y" = "sqrt(value_2)",
+    "x" = "sqrt(estimate_1)",
+    "y" = "sqrt(estimate_2)",
     "group" = "v",
     "fill_type" = "gradient",
     "h" = 0.05
@@ -315,13 +312,13 @@ experiment_contours <- function(combined) {
     geom_text(
       data = combined %>% filter(iteration == 1),
       aes(x = sqrt(truth_1), y = sqrt(truth_2), label = v),
-      size = 4
+      size = 1.5
     ) +
     geom_text(
       data = combined %>%
         group_by(v, D, V, N, K, method) %>%
-        summarise(value_mean_1 = mean(value_1), value_mean_2 = mean(value_2)),
-      aes(x = sqrt(value_mean_1), y = sqrt(value_mean_2), label = v),
-      size = 1, col = "#fc8d62" ) +
+        summarise(estimate_mean_1 = mean(estimate_1), estimate_mean_2 = mean(estimate_2)),
+      aes(x = sqrt(estimate_mean_1), y = sqrt(estimate_mean_2), label = v),
+      size = 1.5, col = "#fc8d62" ) +
     facet_grid(method + N ~ V + D)
 }
