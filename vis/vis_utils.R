@@ -199,10 +199,12 @@ align_experiment <- function(x) {
 
 align_posteriors <- function(mcombined) {
   inv_grouping_cols <- c("iteration", "truth", "estimate")
+  align_inv_grouping_cols <- c("v", "dimension", "median_estimate", inv_grouping_cols)
+
   pi_alignment <- mcombined %>%
     ## first get estimates for beta, using all the iterations
     group_by_(
-      .dots = setdiff(colnames(mcombined), inv_grouping_cols)
+      .dots = setdiff(colnames(mcombined), c(inv_grouping_cols))
     ) %>%
     summarise(
       truth = truth[1],
@@ -211,15 +213,16 @@ align_posteriors <- function(mcombined) {
 
     ## then align the estimates with the truth
     group_by_(
-      .dots = setdiff(colnames(mcombined), c("median_estimate", inv_grouping_cols))
+      .dots = setdiff(colnames(mcombined), align_inv_grouping_cols)
     ) %>%
     do(pi = experiment_pi(.$v, .$dimension, .$median_estimate, .$truth))
 
+  ## finally, use these per-experiment pi-hats to perform alignment
   tbl_df(mcombined) %>%
     left_join(pi_alignment) %>%
-    group_by(
-      .dots = setdiff(colnames(mcombined), inv_grouping_cols)
-    )
+    group_by_(
+      .dots = setdiff(colnames(mcombined), c("dimension", inv_grouping_cols))
+    ) %>%
     do(align_experiment(.))
 }
 

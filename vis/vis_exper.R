@@ -23,7 +23,7 @@ source("./vis_utils.R")
 output_path <- "/scratch/users/kriss1/output/boot_expers"
 metadata <- fread(file.path(output_path, "metadata.csv")) %>%
   unique() %>%
-  head(50)
+  head(25)
 
 ## ---- beta-samples ----
 beta <- get_truth_data(metadata, "beta")
@@ -34,13 +34,10 @@ combined <- get_samples(metadata, "beta") %>%
 
 ## ---- beta-alignment ----
 mcombined <- melt_reshaped_samples(combined)
-mcombined <- list(
+mcombined <- rbind(
   align_posteriors(mcombined %>% filter(method %in% c("vb", "gibbs"))),
   align_bootstraps(mcombined %>% filter(method == "bootstrap"))
 )
-
-mcombined %>% head() %>% data.frame()
-mcombined2 %>% head() %>% data.frame()
 
 combined <- mcombined %>%
   gather(type, value, truth, estimate) %>%
@@ -51,8 +48,7 @@ combined <- mcombined %>%
 experiment_boxplots(mcombined)
 
 ## ---- beta-contours ----
-p <- experiment_contours(combined)
-ggsave("~/test.png", p)
+experiment_contours(combined)
 
 ## ---- beta-histograms ----
 error_histograms(mcombined, c("method + N", "V + D"))
