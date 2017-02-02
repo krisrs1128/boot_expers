@@ -86,14 +86,10 @@ class LDAExperiment(luigi.WrapperTask):
         n_samples = int(self.conf.get("expers", "n_samples"))
         batches = (list(range(n_batches)) * (int(n_samples / n_batches) + 1))[:n_samples]
         batches.sort()
-        logger.info(batches)
-        logger.info(n_samples)
-        logger.info(len(batches))
         batch_endpoints = [0] + [
             i for i in list(range(n_samples - 1))
             if batches[i] != batches[i + 1]
         ]
-        logger.info(batch_endpoints)
 
         tasks = []
         for (k, v) in enumerate(experiment):
@@ -104,7 +100,6 @@ class LDAExperiment(luigi.WrapperTask):
             ]
 
             for i, _ in enumerate(batch_endpoints[:-1]):
-                logger.info(batch_endpoints[i])
                 boot_params = [batch_endpoints[i], batch_endpoints[i + 1] - 1] + \
                               data_params
                 tasks.append(LDABoot(*boot_params))
