@@ -17,7 +17,7 @@ library("tidyr")
 library("rstan")
 library("ggplot2")
 library("ggscaffold")
-source("./vis_utils.R")
+source("../src/sim/lda/vis_utils.R")
 
 ## ---- paths ----
 output_path <- "/scratch/users/kriss1/output/boot_expers"
@@ -44,38 +44,42 @@ combined <- mcombined %>%
   unite(temp, type, dimension) %>%
   spread(temp, value)
 
-## ---- beta-boxplots ----
-experiment_boxplots(mcombined)
+## ---- beta-boxplots-object ----
+unique_V <- unique(mcombined$V)
+p <- list()
+for (i in seq_along(unique_V)) {
+  p[[i]] <- experiment_boxplots(
+    mcombined %>%
+    filter_(sprintf("V == %s", unique_V[i]))
+  )
+}
 
-## ---- beta-contours ----
-experiment_contours(combined)
+## ---- betaboxplot1 ----
+p[[1]]
 
-## ---- beta-histograms ----
-error_histograms(mcombined, c("method + N", "V + D"))
+## ---- betaboxplot2 ----
+p[[2]]
+
+## ---- beta-contours-object ----
+p <- list()
+for (i in seq_along(unique_V)) {
+  p[[i]] <- experiment_contours(
+    combined %>%
+    filter_(sprintf("V == %s", unique_V[i]))
+  )
+}
+
+## ---- betacontours1 ----
+p[[1]]
+
+## ---- betacontours2 ----
+p[[2]]
+
+## ---- betahistograms ----
+error_histograms(mcombined, c("method + V", "D + N"))
 
 ## ---- theta-samples ----
 theta <- get_truth_data(metadata, "theta", "i")
 combined <- get_samples(metadata, "theta", c("iteration", "variable", "k"))  %>%
   full_join(get_bootstraps(metadata, "theta", "i")) %>%
   left_join(theta)
-
-## ---- theta-alignment ----
-mcombined <- melt_reshaped_samples(combined)
-mcombined <- rbind(
-  align_posteriors(mcombined %>% filter(method %in% c("vb", "gibbs"))),
-  align_bootstraps(mcombined %>% filter(method == "bootstrap"))
-)
-
-combined <- mcombined %>%
-  gather(type, value, truth, estimate) %>%
-  unite(temp, type, dimension) %>%
-  spread(temp, value)
-
-## ---- theta-boxplots ----
-experiment_boxplots(mcombined)
-
-## ---- beta-contours ----
-experiment_contours(combined)
-
-## ---- beta-histograms ----
-error_histograms(mcombined, c("method + N", "V + D"))
