@@ -8,7 +8,7 @@
 ##
 ## author: kriss1@stanford.edu
 
-## ---- libraries ----
+## ---- libraries-boot-expers ----
 library("feather")
 library("data.table")
 library("plyr")
@@ -17,17 +17,17 @@ library("tidyr")
 library("rstan")
 library("ggplot2")
 library("ggscaffold")
-source("./vis_utils.R")
+source("../src/sim/lda/vis_utils.R")
 
 ## ---- paths ----
 output_path <- "/scratch/users/kriss1/output/boot_expers"
 metadata <- fread(file.path(output_path, "metadata.csv")) %>%
-  unique() %>%
-  head(25)
+  unique() 
 
 ## ---- beta-samples ----
-beta <- get_truth_data(metadata, "beta")
-combined <- get_samples(metadata, "beta") %>%
+beta <- get_truth_data(metadata, "beta") %>%
+  rename(variable = v)
+combined <- get_samples(metadata, "beta", c("iteration", "k", "variable")) %>%
   full_join(get_bootstraps(metadata, "beta")) %>%
   left_join(beta) %>%
   setDT()
@@ -44,17 +44,42 @@ combined <- mcombined %>%
   unite(temp, type, dimension) %>%
   spread(temp, value)
 
-## ---- beta-boxplots ----
-experiment_boxplots(mcombined)
+## ---- beta-boxplots-object ----
+unique_V <- unique(mcombined$V)
+p <- list()
+for (i in seq_along(unique_V)) {
+  p[[i]] <- experiment_boxplots(
+    mcombined %>%
+    filter_(sprintf("V == %s", unique_V[i]))
+  )
+}
 
-## ---- beta-contours ----
-experiment_contours(combined)
+## ---- betaboxplot1 ----
+p[[1]]
 
-## ---- beta-histograms ----
-error_histograms(mcombined, c("method + N", "V + D"))
+## ---- betaboxplot2 ----
+p[[2]]
+
+## ---- beta-contours-object ----
+p <- list()
+for (i in seq_along(unique_V)) {
+  p[[i]] <- experiment_contours(
+    combined %>%
+    filter_(sprintf("V == %s", unique_V[i]))
+  )
+}
+
+## ---- betacontours1 ----
+p[[1]]
+
+## ---- betacontours2 ----
+p[[2]]
+
+## ---- betahistograms ----
+error_histograms(mcombined, c("method + V", "D + N"))
 
 ## ---- theta-samples ----
-theta <- get_truth_data(metadata, "theta")
-combined <- get_samples(metadata, "theta") %>%
-  full_join(get_bootstraps(metadata, "theta")) %>%
+theta <- get_truth_data(metadata, "theta", "i")
+combined <- get_samples(metadata, "theta", c("iteration", "variable", "k"))  %>%
+  full_join(get_bootstraps(metadata, "theta", "i")) %>%
   left_join(theta)
