@@ -8,7 +8,7 @@
 ##
 ## author: kriss1@stanford.edu
 
-## ---- libraries ----
+## ---- libraries-boot-expers ----
 library("feather")
 library("data.table")
 library("plyr")
@@ -22,8 +22,7 @@ source("./vis_utils.R")
 ## ---- paths ----
 output_path <- "/scratch/users/kriss1/output/boot_expers"
 metadata <- fread(file.path(output_path, "metadata.csv")) %>%
-  unique() %>%
-  head(25)
+  unique() 
 
 ## ---- beta-samples ----
 beta <- get_truth_data(metadata, "beta") %>%
@@ -59,3 +58,24 @@ theta <- get_truth_data(metadata, "theta", "i")
 combined <- get_samples(metadata, "theta", c("iteration", "variable", "k"))  %>%
   full_join(get_bootstraps(metadata, "theta", "i")) %>%
   left_join(theta)
+
+## ---- theta-alignment ----
+mcombined <- melt_reshaped_samples(combined)
+mcombined <- rbind(
+  align_posteriors(mcombined %>% filter(method %in% c("vb", "gibbs"))),
+  align_bootstraps(mcombined %>% filter(method == "bootstrap"))
+)
+
+combined <- mcombined %>%
+  gather(type, value, truth, estimate) %>%
+  unite(temp, type, dimension) %>%
+  spread(temp, value)
+
+## ---- theta-boxplots ----
+experiment_boxplots(mcombined)
+
+## ---- beta-contours ----
+experiment_contours(combined)
+
+## ---- beta-histograms ----
+error_histograms(mcombined, c("method + N", "V + D"))
