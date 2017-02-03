@@ -28,7 +28,7 @@ metadata <- fread(file.path(output_path, "metadata.csv")) %>%
 ## ---- beta-samples ----
 beta <- get_truth_data(metadata, "beta") %>%
   rename(variable = v)
-combined <- get_samples(metadata, "beta") %>%
+combined <- get_samples(metadata, "beta", c("iteration", "k", "variable")) %>%
   full_join(get_bootstraps(metadata, "beta")) %>%
   left_join(beta) %>%
   setDT()
@@ -56,6 +56,6 @@ error_histograms(mcombined, c("method + N", "V + D"))
 
 ## ---- theta-samples ----
 theta <- get_truth_data(metadata, "theta", "i")
-combined <- get_samples(metadata, "theta") %>%
+combined <- get_samples(metadata, "theta", c("iteration", "variable", "k"))  %>%
   full_join(get_bootstraps(metadata, "theta", "i")) %>%
   left_join(theta)

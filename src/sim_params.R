@@ -34,7 +34,7 @@ theta_path <- file.path(output_dir, paste0("theta-", output_id, ".feather"))
 write_feather(
   melt(
     params$theta,
-    varnames = c("k", "i"),
+    varnames = c("i", "k"),
     value.name = "theta"
   ),
   theta_path
