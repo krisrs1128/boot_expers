@@ -65,9 +65,9 @@ for (i in seq(start_iter, end_iter)) {
         extract()
 
     beta_boot <- posterior_mean(vb_fit$beta, c("v", "k")) %>%
-        melt(varnames = c("v", "k"), value.name = "beta")
-    theta_boot <- posterior_mean(vb_fit$theta, c("i", "k")) %>%
-        melt(varnames = c("i", "k"), value.name = "theta")
+      melt(varnames = c("v", "k"), value.name = "beta")
+    theta_boot <- posterior_mean(aperm(vb_fit$theta, c(1, 3, 2)), c("i", "k")) %>%
+      melt(varnames = c("i", "k"), value.name = "theta")
 
     theta_path <- file.path(output_dir, paste0("theta-boot-", fit_id, i, ".feather"))
     beta_path <- file.path(output_dir, paste0("beta-boot-", fit_id, i, ".feather"))
