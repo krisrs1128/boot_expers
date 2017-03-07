@@ -14,14 +14,12 @@ alpha <- as.numeric(args[[7]])
 gamma <- as.numeric(args[[8]])
 
 ## ---- libraries ----
-library("rstan")
 library("feather")
 library("plyr")
 library("dplyr")
-library("data.table")
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(3141596)
+library("rstan")
+library("reshape2")
+library("ldaSim")
 
 ## ---- get-data ----
 n <- read_feather(data_path) %>%
@@ -39,7 +37,7 @@ stan_data <- list(
 )
 
 ## ---- fit-model ----
-stan_path <- file.path(.libPaths()[1], "extdata", "lda.stan")
+stan_path <- file.path(.libPaths()[1], "ldaSim", "extdata", "lda.stan")
 if (tolower(fit_method) == "vb") {
     fit <- vb(
       stan_model(stan_path),

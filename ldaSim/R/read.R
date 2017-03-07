@@ -25,6 +25,7 @@ cbind_list <- function(data_list, cbind_vals, cbind_name) {
 #' @importFrom rstan extract
 #' @importFrom reshape2 melt
 #' @importFrom data.table rbindlist
+#' @importFrom magrittr %>%
 #' @export
 rdata_from_paths <- function(paths, param, var_names = NULL) {
   data <- paths %>%
@@ -38,6 +39,7 @@ rdata_from_paths <- function(paths, param, var_names = NULL) {
 
 #' Read feathers from a vector of paths
 #' @importFrom data.table rbindlist
+#' @importFrom magrittr %>%
 #' @export
 feather_from_paths <- function(paths) {
   ## read data into list

@@ -28,15 +28,6 @@ dir.create(output_dir)
 set.seed(3141596)
 
 ## ---- utils ----
-posterior_mean <- function(samples, dims) {
-    samples %>%
-        melt(varnames = c("iteration", rev(dims))) %>%
-        group_by_(.dots = dims) %>%
-        summarise(value = mean(value)) %>%
-        dcast(formula(paste(dims, collapse = "~"))) %>%
-        select_(paste0("-", dims[1])) %>%
-        as.matrix()
-}
 
 ## --- get-fit ---
 fit <- get(load(input_path))
