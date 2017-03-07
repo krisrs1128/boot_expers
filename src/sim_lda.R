@@ -11,11 +11,11 @@ beta_path <- args[[4]]
 theta_path <- args[[5]]
 
 ## ---- libraries ----
-source("../src/lda.R")
 library("feather")
 library("plyr")
 library("dplyr")
 library("data.table")
+library("ldaSim")
 set.seed(3141596)
 
 ## ---- simulate ----

@@ -21,7 +21,7 @@ library("feather")
 library("plyr")
 library("dplyr")
 library("data.table")
-source("../src/lda.R")
+library("ldaSim")
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 dir.create(output_dir)
@@ -58,7 +58,7 @@ for (i in seq(start_iter, end_iter)) {
     )
 
     vb_fit <- vb(
-        stan_model("../src/lda.stan"),
+        stan_model(file.path(.libPaths()[1], "ldaSim", "extdata", "lda.stan")),
         stan_data,
         iter = n_samples
     ) %>%

@@ -12,9 +12,9 @@ alpha0 <- as.numeric(args[[6]])
 gamma0 <- as.numeric(args[[7]])
 
 ## ---- libraries ----
-source("../src/lda.R")
 library("feather")
 library("reshape2")
+library("ldaSim")
 set.seed(3141596)
 
 ## ---- simulate ----
