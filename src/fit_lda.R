@@ -39,7 +39,7 @@ stan_data <- list(
 )
 
 ## ---- fit-model ----
-stan_path <- file.path(.libPaths()[1], "extdata", "lda.stan")
+stan_path <- file.path(.libPaths()[1], "ldaSim", "extdata", "lda.stan")
 if (tolower(fit_method) == "vb") {
     fit <- vb(
       stan_model(stan_path),

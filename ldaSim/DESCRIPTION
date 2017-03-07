@@ -1,10 +1,11 @@
 Package: ldaSim
-Title: What the Package Does (one line, title case)
+Title: Helpers for Running LDA Simulations
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Authors@R: person("Kris", "Sankaran", email = "kriss1@stanford.edu", role = c("aut", "cre"))
 Description: What the package does (one paragraph).
 Depends:
     R (>= 3.3.0)
+    Rcpp (>= 0.11.3)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
