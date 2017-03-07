@@ -12,8 +12,6 @@ n_samples <- as.integer(args[[5]])
 K <- as.integer(args[[6]])
 alpha <- as.numeric(args[[7]])
 gamma <- as.numeric(args[[8]])
-save(list = ls(all.names = TRUE), file = "~/input.rda")
-load("~/input.rda")
 
 ## ---- libraries ----
 library("rstan")
@@ -41,15 +39,16 @@ stan_data <- list(
 )
 
 ## ---- fit-model ----
+stan_path <- file.path(.libPaths()[1], "extdata", "lda.stan")
 if (tolower(fit_method) == "vb") {
     fit <- vb(
-      stan_model("../src/lda.stan"),
+      stan_model(stan_path),
       data = stan_data,
       output_samples = n_samples
     )
 } else if (tolower(fit_method) == "gibbs") {
     fit <- stan(
-      "../src/lda.stan",
+      stan_path,
       data = stan_data,
       chains = 1,
       iter = 2 * n_samples ## half are warmup
