@@ -21,7 +21,7 @@
 #'   factors and simulation configurations.
 #' @importFrom ggplot2 ggplot geom_histogram aes facet_grid scale_y_continuous
 #'   scale_fill_manual theme
-#' @importFrom ggcontours min_theme
+#' @importFrom ggscaffold min_theme
 #' @importFrom scales pretty_breaks
 #' @export
 error_histograms <- function(plot_data,
@@ -51,7 +51,7 @@ error_histograms <- function(plot_data,
 #'   configurations.
 #' @importFrom ggplot2 geom_hline scale_x_discrete facet_grid theme
 #'   element_blank
-#' @importFrom ggcontours ggboxplot
+#' @importFrom ggscaffold ggboxplot
 #' @importFrom grid unit
 #' @export
 experiment_boxplots <- function(mcombined) {
