@@ -6,6 +6,7 @@
 ## author: kriss1@stanford.edu
 
 #' Bind together lists, not losing track of filenames
+#' @importFrom data.table data.table
 #' @export
 cbind_list <- function(data_list, cbind_vals, cbind_name) {
   ## bind together, not losing tracks of filename
@@ -21,11 +22,14 @@ cbind_list <- function(data_list, cbind_vals, cbind_name) {
 }
 
 #' Read RData from a vector of paths
+#' @importFrom rstan extract
+#' @importFrom reshape2 melt
+#' @importFrom data.table rbindlist
 #' @export
 rdata_from_paths <- function(paths, param, var_names = NULL) {
   data <- paths %>%
     lapply(function(x) {
-      res <- rstan::extract(get(load(x)))
+      res <- extract(get(load(x)))
       melt(res[[param]], varnames = var_names, value.name = "value")
     }) %>%
     cbind_list(paths, "file")
@@ -33,6 +37,7 @@ rdata_from_paths <- function(paths, param, var_names = NULL) {
 }
 
 #' Read feathers from a vector of paths
+#' @importFrom data.table rbindlist
 #' @export
 feather_from_paths <- function(paths) {
   ## read data into list
