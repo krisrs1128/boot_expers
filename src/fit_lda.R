@@ -13,6 +13,13 @@ K <- as.integer(args[[6]])
 alpha <- as.numeric(args[[7]])
 gamma <- as.numeric(args[[8]])
 
+## ---- libraries ----
+library("plyr")
+library("dplyr")
+library("rstan")
+library("reshape2")
+library("ldaSim")
+
 ## ---- get-data ----
 n <- read_feather(data_path) %>%
     dcast(i ~ v) %>%
