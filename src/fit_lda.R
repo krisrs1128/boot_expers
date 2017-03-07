@@ -13,16 +13,6 @@ K <- as.integer(args[[6]])
 alpha <- as.numeric(args[[7]])
 gamma <- as.numeric(args[[8]])
 
-## ---- libraries ----
-library("rstan")
-library("feather")
-library("plyr")
-library("dplyr")
-library("data.table")
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-set.seed(3141596)
-
 ## ---- get-data ----
 n <- read_feather(data_path) %>%
     dcast(i ~ v) %>%
