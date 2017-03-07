@@ -14,6 +14,7 @@ alpha <- as.numeric(args[[7]])
 gamma <- as.numeric(args[[8]])
 
 ## ---- libraries ----
+library("feather")
 library("plyr")
 library("dplyr")
 library("rstan")
