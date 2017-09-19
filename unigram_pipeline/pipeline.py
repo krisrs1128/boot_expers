@@ -65,7 +65,17 @@ class UnigramParams(luigi.ExternalTask):
     conf = configuration.get_config()
 
     def run(self):
-        raise(NotImplementedError())
+        gen_id = hash_string("".join([self.D, self.V, self.sigma0]))
+        run_cmd = [
+            "Rscript", self.conf.get("expers", "param_script"),
+            self.conf.get("expers", "output_dir"), gen_id, self.D, self.V,
+            self.sigma0
+        ]
+        run_and_check(run_cmd)
 
     def output(self):
         raise(NotImplementedError())
+
+
+if __name__ == "__main__":
+    luigi.run()
