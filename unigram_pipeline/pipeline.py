@@ -10,7 +10,6 @@ from luigi import configuration
 import subprocess
 import os
 import hashlib
-import json
 
 logging_conf = configuration.get_config().get("core", "logging_conf_file")
 logging.config.fileConfig(logging_conf)
@@ -19,6 +18,7 @@ logger = logging.getLogger("unigram.pipeline")
 ###############################################################################
 # Minor utilities used throughout the pipeline
 ###############################################################################
+
 
 def hash_string(string, max_chars=32):
     """
@@ -37,13 +37,16 @@ def fit_id(self):
 
 def run_and_check(cmds):
     run_cmd = [str(s) for s in cmds]
+    print(run_cmd)
     status = subprocess.call(run_cmd)
     if status is not 0:
         raise ValueError("Bash commands failed")
 
+
 ###############################################################################
 # Core pipeline classes
 ###############################################################################
+
 
 class UnigramParams(luigi.ExternalTask):
     """
@@ -66,6 +69,7 @@ class UnigramParams(luigi.ExternalTask):
 
     def run(self):
         gen_id = hash_string("".join([self.D, self.V, self.sigma0]))
+        print(gen_id)
         run_cmd = [
             "Rscript", self.conf.get("expers", "param_script"),
             self.conf.get("expers", "output_dir"), gen_id, self.D, self.V,
@@ -74,7 +78,11 @@ class UnigramParams(luigi.ExternalTask):
         run_and_check(run_cmd)
 
     def output(self):
-        raise(NotImplementedError())
+        gen_id = hash_string("".join([self.D, self.V, self.sigma0]))
+        output_dir = self.conf.get("expers", "output_dir")
+        return [
+            luigi.LocalTarget(os.path.join(output_dir, "mu-" + gen_id + ".feather"))
+        ]
 
 
 if __name__ == "__main__":

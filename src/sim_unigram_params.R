@@ -59,7 +59,7 @@ unigram_params <- function(D, V, sigma0) {
 ###############################################################################
 mu <- unigram_params(argv$D, argv$V, argv$sigma0)
 dir.create(output_dir)
-mu_path <- file.path(output_dir, sprintf("unigram-%s.feather", argv$gen_id))
+mu_path <- file.path(output_dir, sprintf("mu-%s.feather", argv$gen_id))
 
 write_feather(
   melt(
