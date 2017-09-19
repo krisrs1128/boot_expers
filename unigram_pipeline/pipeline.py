@@ -40,3 +40,32 @@ def run_and_check(cmds):
     status = subprocess.call(run_cmd)
     if status is not 0:
         raise ValueError("Bash commands failed")
+
+###############################################################################
+# Core pipeline classes
+###############################################################################
+
+class UnigramParams(luigi.ExternalTask):
+    """
+    Simulate parameters for a Unigram model
+
+    This generates the parameters mu[t] for a particular instance of the
+    dynamic unigram model.
+
+    Arguments:
+      D (int): How many samples are there in this experiment?
+      V (int): How many terms are there across samples?
+      sigma0 (float): What is the true sigma random walk size parameter used in
+      generating the data?
+    """
+    D = luigi.Parameter()
+    V = luigi.Parameter()
+    sigma0 = luigi.Parameter()
+
+    conf = configuration.get_config()
+
+    def run(self):
+        raise(NotImplementedError())
+
+    def output(self):
+        raise(NotImplementedError())
