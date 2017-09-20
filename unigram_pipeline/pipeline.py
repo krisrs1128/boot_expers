@@ -30,14 +30,13 @@ def hash_string(string, max_chars=32):
 
 def fit_id(self):
     return hash_string(
-        "".join([self.K_fit, self.sigma_fit, self.D, self.N, self.V, self.K,
-                 self.sigma, self.conf.get("expers", "n_samples")])
+        "".join([self.fit_method, self.a0, self.b0, self.D,
+        self.N, self.V])
     )
 
 
 def run_and_check(cmds):
     run_cmd = [str(s) for s in cmds]
-    print(run_cmd)
     status = subprocess.call(run_cmd)
     if status is not 0:
         raise ValueError("Bash commands failed")
@@ -67,6 +66,37 @@ class UnigramBoot(luigi.Task):
     N = luigi.Parameter()
     V = luigi.Parameter()
 
+    conf = configuration.get_config()
+
+    def requires(self):
+        return UnigramFit(
+            "vb", self.a0, self.b0, self.D, self.N, self.V
+        )
+
+    def run(self):
+        input_path = self.input().open("r").name
+        run_cmd = [
+            "Rscript", self.conf.get("expers", "boot_script"),
+            os.path.join(self.conf.get("expers", "output_dir"), "bootstraps"),
+            self.start_ix, self.end_ix, fit_id(self), input_path, self.a0,
+            self.b0, self.conf.get("expers", "n_samples")
+        ]
+        run_and_check(run_cmd)
+
+    def output(self):
+        output_dir = os.path.join(
+            self.conf.get("expers", "output_dir"),
+            "bootstraps"
+        )
+        output_base = [
+            "boot-" + fit_id(self) + str(i) + ".feather"
+            for i in range(int(self.start_ix), int(self.end_ix))
+        ]
+
+        return [luigi.LocalTarget(os.path.join(output_dir, "mu-" + s))
+                for s in output_base]
+
+
 class UnigramFit(luigi.Task):
     """
     Fit a Unigram model on simulated data
@@ -78,13 +108,17 @@ class UnigramFit(luigi.Task):
       D (int): How many samples are there in this experiment?
       N (int): How many words are there in each sample?
       V (int): How many terms are there across samples?
+      sigma0 (float): What is the true sigma random walk size parameter used in
+      generating the data?
     """
+
     fit_method = luigi.Parameter()
     a0 = luigi.Parameter()
     b0 = luigi.Parameter()
     D = luigi.Parameter()
     N = luigi.Parameter()
     V = luigi.Parameter()
+    sigma0 = luigi.Parameter()
 
     conf = configuration.get_config()
 
@@ -92,16 +126,12 @@ class UnigramFit(luigi.Task):
         return UnigramData(self.D, self.N, self.V, self.sigma0)
 
     def run(self):
-        fit_id = "".join([
-            self.fit_method, self.a0, self.b0, self.D, self.N, self.V
-        ])
-
         run_cmd = [
             "Rscript",
             self.conf.get("expers", "output_dir"),
             self.fit_method,
             self.conf.get("expers", "stan_path"),
-            fit_id,
+            fit_id(self),
             self.input().open("r").name,
             self.conf.get("expers", "n_samples"),
             self.a0,
@@ -110,12 +140,8 @@ class UnigramFit(luigi.Task):
         run_and_check(run_cmd)
 
     def output(self):
-        fit_id = "".join([
-            self.fit_method, self.sigma0_fit, self.D, self.N, self.V
-        ])
-
         output_dir = self.conf.get("expers", "output_dir")
-        output_file = self.fit_method + "-" + fit_id + ".RData"
+        output_file = self.fit_method + "-" + fit_id(self) + ".RData"
         return luigi.LocalTarget(os.path.join(output_dir, output_file))
 
 
