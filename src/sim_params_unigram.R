@@ -35,7 +35,6 @@ unigram_params <- function(D, V, sigma0) {
 ###############################################################################
 ## simulate and write results to file
 ###############################################################################
-print(argv)
 mu <- unigram_params(argv$D, argv$V, argv$sigma0)
 dir.create(argv$output_dir)
 mu_path <- file.path(argv$output_dir, sprintf("mu-%s.feather", argv$gen_id))
