@@ -69,15 +69,15 @@ class UnigramFit(luigi.Task):
         return UnigramData(self.D, self.N, self.V, self.sigma0)
 
     def run(self):
-        data_path = self.input().open("r").name
         fit_id = "".join([
             self.fit_method, self.sigma0_fit, self.D, self.N, self.V
         ])
 
         run_cmd = [
             "Rscript",
-            self.conf.get("expers", "output_dir", fit_id),
+            self.conf.get("expers", "output_dir"),
             fit_id,
+            self.input().open("r").name,
             self.conf.get("expers", "n_samples"),
             self.sigma0_fit
         ]
