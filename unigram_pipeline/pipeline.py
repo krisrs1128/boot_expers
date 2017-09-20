@@ -46,13 +46,35 @@ def run_and_check(cmds):
 ###############################################################################
 # Core pipeline classes
 ###############################################################################
+class UnigramBoot(luigi.Task):
+    """
+    Parametric Boostrap inference for Dynamic Unigrams
+
+    Arguments:
+      start_ix (int): The start index for the current bootstrapping iterations
+      end_ix (int): The end index for hte current bootstrapping interations
+      a0 (float): What is the hyperparameter a0 we should use when fitting?
+      b0 (float): What is the hyperparameter b0 we should use when fitting?
+      D (int): How many samples are there in this experiment?
+      N (int): How many words are there in each sample?
+      V (int): How many terms are there across samples?
+    """
+    start_ix = luigi.Parameter()
+    end_ix = luigi.Parameter()
+    a0 = luigi.Parameter()
+    b0 = luigi.Parameter()
+    D = luigi.Parameter()
+    N = luigi.Parameter()
+    V = luigi.Parameter()
+
 class UnigramFit(luigi.Task):
     """
     Fit a Unigram model on simulated data
 
     Arguments:
       fit_method (str): Should we use variational bayes or gibbs sampling?
-      sigma0_fit (float): What is the sigma0 we should use when fitting?
+      a0 (float): What is the hyperparameter a0 we should use when fitting?
+      b0 (float): What is the hyperparameter b0 we should use when fitting?
       D (int): How many samples are there in this experiment?
       N (int): How many words are there in each sample?
       V (int): How many terms are there across samples?
