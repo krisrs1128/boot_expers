@@ -11,37 +11,15 @@
 ###############################################################################
 ## setup arguments + functions
 ###############################################################################
-library("argparser")
 library("reshape2")
 library("feather")
-
-parser <- arg_parser("Simulate parameters according to a dynamic unigram model")
-parser <- add_argument(
-  parser,
-  "--output_dir"
-  help = "Directory to save the output"
-)
-parser <- add_argument(
-  parser,
-  "--gen_id",
-  help = "Unique identifier for the output object of this script"
-)
-parser <- add_argument(
-  parser,
-  "--D",
-  help = "The total number of samples / timepoints in this simulation"
-)
-parser <- add_argument(
-  parser,
-  "--V",
-  help = "The number of terms at each timepoint"
-)
-parser <- add_argument(
-  parser,
-  "--sigma0",
-  help = "The random walk diffusion parameter"
-)
-argv <- parse_args(parser)
+args <- commandArgs(trailingOnly=TRUE)
+argv <- list()
+argv$output_dir <- args[[1]]
+argv$gen_id <- args[[2]]
+argv$D <- as.integer(args[[3]])
+argv$V <- as.integer(args[[4]])
+argv$sigma0 <- as.numeric(args[[5]])
 
 #' Simulate unigram parameters
 unigram_params <- function(D, V, sigma0) {
@@ -57,9 +35,10 @@ unigram_params <- function(D, V, sigma0) {
 ###############################################################################
 ## simulate and write results to file
 ###############################################################################
+print(argv)
 mu <- unigram_params(argv$D, argv$V, argv$sigma0)
-dir.create(output_dir)
-mu_path <- file.path(output_dir, sprintf("mu-%s.feather", argv$gen_id))
+dir.create(argv$output_dir)
+mu_path <- file.path(argv$output_dir, sprintf("mu-%s.feather", argv$gen_id))
 
 write_feather(
   melt(
@@ -87,9 +66,9 @@ metadata <- data.frame(
 
 write.table(
   metadata,
-  file = file.path(output_dir, "metadata.csv"),
+  file = file.path(argv$output_dir, "metadata.csv"),
   append = TRUE,
   sep = ",",
   row.names = FALSE,
-  colnames = !file.exists(file.path(output_dir, "metadata.csv"))
+  col.names = !file.exists(file.path(argv$output_dir, "metadata.csv"))
 )
