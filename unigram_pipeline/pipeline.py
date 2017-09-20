@@ -58,7 +58,8 @@ class UnigramFit(luigi.Task):
       V (int): How many terms are there across samples?
     """
     fit_method = luigi.Parameter()
-    sigma0_fit = luigi.Parameter()
+    a0 = luigi.Parameter()
+    b0 = luigi.Parameter()
     D = luigi.Parameter()
     N = luigi.Parameter()
     V = luigi.Parameter()
@@ -70,16 +71,19 @@ class UnigramFit(luigi.Task):
 
     def run(self):
         fit_id = "".join([
-            self.fit_method, self.sigma0_fit, self.D, self.N, self.V
+            self.fit_method, self.a0, self.b0, self.D, self.N, self.V
         ])
 
         run_cmd = [
             "Rscript",
             self.conf.get("expers", "output_dir"),
+            self.fit_method,
+            self.conf.get("expers", "stan_path"),
             fit_id,
             self.input().open("r").name,
             self.conf.get("expers", "n_samples"),
-            self.sigma0_fit
+            self.a0,
+            self.b0
         ]
         run_and_check(run_cmd)
 
