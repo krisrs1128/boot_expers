@@ -30,8 +30,8 @@ def hash_string(string, max_chars=32):
 
 def fit_id(self):
     return hash_string(
-        "".join([self.fit_method, self.a0, self.b0, self.D,
-        self.N, self.V])
+        "".join([self.conf.get("expers", "n_samples"), self.a0, self.b0,
+                 self.D, self.N, self.V, self.sigma0])
     )
 
 
@@ -65,12 +65,13 @@ class UnigramBoot(luigi.Task):
     D = luigi.Parameter()
     N = luigi.Parameter()
     V = luigi.Parameter()
+    sigma0 = luigi.Parameter()
 
     conf = configuration.get_config()
 
     def requires(self):
         return UnigramFit(
-            "vb", self.a0, self.b0, self.D, self.N, self.V
+            "vb", self.a0, self.b0, self.D, self.N, self.V, self.sigma0
         )
 
     def run(self):
@@ -78,8 +79,9 @@ class UnigramBoot(luigi.Task):
         run_cmd = [
             "Rscript", self.conf.get("expers", "boot_script"),
             os.path.join(self.conf.get("expers", "output_dir"), "bootstraps"),
-            self.start_ix, self.end_ix, fit_id(self), input_path, self.a0,
-            self.b0, self.conf.get("expers", "n_samples")
+            self.start_ix, self.end_ix, fit_id(self), input_path,
+            self.conf.get("expers", "stan_path"), self.conf.get("expers",
+            "n_samples"), self.N, self.a0, self.b0,
         ]
         run_and_check(run_cmd)
 
@@ -128,6 +130,7 @@ class UnigramFit(luigi.Task):
     def run(self):
         run_cmd = [
             "Rscript",
+            self.conf.get("expers", "fit_script"),
             self.conf.get("expers", "output_dir"),
             self.fit_method,
             self.conf.get("expers", "stan_path"),
