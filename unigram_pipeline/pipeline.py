@@ -46,6 +46,53 @@ def run_and_check(cmds):
 ###############################################################################
 # Core pipeline classes
 ###############################################################################
+class UnigramFit(luigi.Task):
+    """
+    Fit a Unigram model on simulated data
+
+    Arguments:
+      fit_method (str): Should we use variational bayes or gibbs sampling?
+      sigma0_fit (float): What is the sigma0 we should use when fitting?
+      D (int): How many samples are there in this experiment?
+      N (int): How many words are there in each sample?
+      V (int): How many terms are there across samples?
+    """
+    fit_method = luigi.Parameter()
+    sigma0_fit = luigi.Parameter()
+    D = luigi.Parameter()
+    N = luigi.Parameter()
+    V = luigi.Parameter()
+
+    conf = configuration.get_config()
+
+    def requires(self):
+        return UnigramData(self.D, self.N, self.V, self.sigma0)
+
+    def run(self):
+        data_path = self.input().open("r").name
+        fit_id = "".join([
+            self.fit_method, self.sigma0_fit, self.D, self.N, self.V
+        ])
+
+        run_cmd = [
+            "Rscript",
+            self.conf.get("expers", "output_dir", fit_id),
+            fit_id,
+            self.conf.get("expers", "n_samples"),
+            self.sigma0_fit
+        ]
+        run_and_check(run_cmd)
+
+    def output(self):
+        fit_id = "".join([
+            self.fit_method, self.sigma0_fit, self.D, self.N, self.V
+        ])
+
+        output_dir = self.conf.get("expers", "output_dir")
+        output_file = self.fit_method + "-" + fit_id + ".RData"
+        return luigi.LocalTarget(os.path.join(output_dir, output_file))
+
+
 class UnigramData(luigi.Task):
     """
     Simulate data according to a Unigram model
