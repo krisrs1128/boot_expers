@@ -10,6 +10,7 @@ from luigi import configuration
 import subprocess
 import os
 import hashlib
+import json
 
 logging_conf = configuration.get_config().get("core", "logging_conf_file")
 logging.config.fileConfig(logging_conf)
@@ -45,6 +46,51 @@ def run_and_check(cmds):
 ###############################################################################
 # Core pipeline classes
 ###############################################################################
+class UnigramExperiment(luigi.WrapperTask):
+    """Wrapper Task for Full Unigram Experiment
+
+    Run the complete Unigram simulation experiment. It will send off the gibbs,
+    bootstrap, and variational bayes runs that are later visualized in the
+    simulations section.
+
+    Attributes:
+        conf (configuration): A luigi configuration object, created by parsing
+        ./luigi.cfg. This provides the link to high level experiment
+        parameters.
+    """
+    conf = configuration.get_config()
+
+    def requires(self):
+        with open(self.conf.get("expers", "master")) as f:
+            experiment = json.load(f)
+
+        n_batches = int(self.conf.get("expers", "n_batches"))
+        n_samples = int(self.conf.get("expers", "n_samples"))
+        batches = (list(range(n_batches)) * (int(n_samples / n_batches) + 1))[:n_samples]
+        batches.sort()
+        batch_endpoints = [0] + [
+            i for i in list(range(n_samples - 1))
+            if batches[i] != batches[i + 1]
+        ]
+
+        tasks = []
+        for (k, v) in enumerate(experiment):
+            data_params = [
+                str(v["a0"]), str(v["b0"]), str(v["D"]), str(v["N"]),
+                str(v["V"]), str(v["sigma0"])
+            ]
+
+            for i, _ in enumerate(batch_endpoints[:-1]):
+                boot_params = [batch_endpoints[i], batch_endpoints[i + 1] - 1] + \
+                              data_params
+                tasks.append(UnigramBoot(*boot_params))
+
+            gibbs_params = ["gibbs"] + data_params
+            tasks.append(UnigramFit(*gibbs_params))
+
+        return tasks
+
+
 class UnigramBoot(luigi.Task):
     """
     Parametric Boostrap inference for Dynamic Unigrams
