@@ -27,9 +27,6 @@ options(mc.cores = parallel::detectCores())
 dir.create(output_dir)
 set.seed(3141596)
 
-## ---- utils ----
-
-## --- get-fit ---
 fit <- get(load(input_path))
 samples <- extract(fit)
 
@@ -51,7 +48,7 @@ for (i in seq(start_iter, end_iter)) {
     vb_fit <- vb(
         stan_model(file.path(.libPaths()[1], "ldaSim", "extdata", "lda.stan")),
         stan_data,
-        iter = n_samples
+        output_samples = n_samples
     ) %>%
         extract()
 
