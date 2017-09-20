@@ -59,7 +59,8 @@ if (tolower(fit_method) == "vb") {
     stan_path,
     data = stan_data,
     chains = 1,
-    iter = 2 * n_samples
+    warmup = 1000,
+    iter = n_samples
   )
 } else {
   stop("fit_method must be either 'gibbs' or 'vb'")

@@ -40,7 +40,6 @@ dir.create(argv$output_dir)
 fit <- get(load(argv$input_path))
 samples <- rstan::extract(fit)
 mu_hat <- apply(samples$mu, c(2, 3), mean)
-print(dim(mu_hat))
 
 for (i in seq(argv$start_iter, argv$end_iter)) {
   cur_data <- unigram_data(argv$N, mu_hat)
