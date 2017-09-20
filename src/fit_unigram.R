@@ -13,6 +13,8 @@
 library("feather")
 library("tidyverse")
 library("rstan")
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
 args <- commandArgs(trailingOnly = TRUE)
 output_dir <- args[[1]]
@@ -33,7 +35,6 @@ X <- read_feather(data_path) %>%
   as.matrix()
 
 stan_data <- list(
-  "sigma0" = sigma0,
   "V" = ncol(X),
   "T" = nrow(X),
   "N" = nrow(X),
@@ -69,7 +70,7 @@ if (tolower(fit_method) == "vb") {
 ###############################################################################
 output_path <- file.path(
   output_dir,
-  sprintf("%s-%s.RData", fit_method, gen_id)
+  sprintf("%s-%s.RData", fit_method, fit_id)
 )
 save(fit, file = output_path)
 
