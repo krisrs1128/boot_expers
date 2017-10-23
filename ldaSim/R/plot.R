@@ -101,20 +101,48 @@ experiment_contours <- function(combined) {
     "y" = "sqrt(estimate_2)",
     "group" = "variable",
     "fill_type" = "gradient",
-    "h" = 0.05
+    "h" = 0.01
   )
 
+  estimates <- combined %>%
+    group_by(variable, D, V, N, K, method) %>%
+    summarise(
+      estimate_mean_1 = mean(estimate_1),
+      estimate_mean_2 = mean(estimate_2),
+      truth_1 = truth_1[1],
+      truth_2 = truth_2[1]
+    )
+
   ggcontours(combined, plot_opts) +
-    geom_text(
-      data = combined %>% filter(iteration == 1),
-      aes(x = sqrt(truth_1), y = sqrt(truth_2), label = variable),
-      size = 2
+    geom_segment(
+      data = estimates,
+      aes(
+        x = sqrt(estimate_mean_1),
+        y = sqrt(estimate_mean_2),
+        xend = sqrt(truth_1),
+        yend = sqrt(truth_2)
+      ),
+      size = 0.2,
+      alpha = 0.3
     ) +
-    geom_text(
-      data = combined %>%
-        group_by(variable, D, V, N, K, method) %>%
-        summarise(estimate_mean_1 = mean(estimate_1), estimate_mean_2 = mean(estimate_2)),
-      aes(x = sqrt(estimate_mean_1), y = sqrt(estimate_mean_2), label = variable),
-      size = 2, col = "#fc8d62" ) +
-  facet_grid(method ~ D + N)
+    geom_point(
+      data = estimates,
+      aes(
+        x = sqrt(estimate_mean_1),
+        y = sqrt(estimate_mean_2)
+      ),
+      col = "#fc8d62",
+      size = 0.3,
+      alpha = 0.4
+    ) +
+    geom_point(
+      data = estimates,
+      aes(
+        x = sqrt(truth_1),
+        y = sqrt(truth_2)
+      ),
+      size = 0.3,
+      alpha = 0.4
+    ) +
+    facet_grid(method ~ D + N)
 }
