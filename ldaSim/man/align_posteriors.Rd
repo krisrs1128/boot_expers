@@ -9,4 +9,3 @@ align_posteriors(mcombined)
 \description{
 Align posterior samples
 }
-

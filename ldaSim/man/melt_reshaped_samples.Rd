@@ -20,4 +20,3 @@ as separate columns, we'll also want to the melted data when computing
 explicit errors. This takes the output of reshaped_... and melts it so that
 it's appropriate for histogramming the errors.
 }
-

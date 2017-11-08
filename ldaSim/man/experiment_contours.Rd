@@ -16,4 +16,3 @@ configurations.}
 \description{
 Contour plots across topic components
 }
-

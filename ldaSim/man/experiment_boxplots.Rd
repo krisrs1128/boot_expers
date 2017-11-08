@@ -17,4 +17,3 @@ p [ggplot] The ggplot object containing the sampled values across
 \description{
 Boxplots across experiment configurations
 }
-

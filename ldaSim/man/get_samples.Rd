@@ -19,4 +19,3 @@ samples [data.frame]
 This retrieves all posterior samples for a parameter, across many
 experimental configurations.
 }
-

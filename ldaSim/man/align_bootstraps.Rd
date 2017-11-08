@@ -9,4 +9,3 @@ align_bootstraps(mcombined)
 \description{
 Align topics across bootstrap samples
 }
-

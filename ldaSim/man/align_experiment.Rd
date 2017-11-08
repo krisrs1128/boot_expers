@@ -9,4 +9,3 @@ align_experiment(x)
 \description{
 Align topics across a full simulations
 }
-

@@ -36,4 +36,3 @@ Z <- X[pi, ] + matrix(rnorm(100), 20, 5)
 pi_hat <- match_matrix(X, Z)
 cbind(pi_hat, pi)
 }
-

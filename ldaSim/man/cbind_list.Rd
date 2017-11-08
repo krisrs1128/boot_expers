@@ -9,4 +9,3 @@ cbind_list(data_list, cbind_vals, cbind_name)
 \description{
 Bind together lists, not losing track of filenames
 }
-

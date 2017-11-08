@@ -9,4 +9,3 @@ rdata_from_paths(paths, param, var_names = NULL)
 \description{
 Read RData from a vector of paths
 }
-

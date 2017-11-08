@@ -28,4 +28,3 @@ result [list of data.table] A list of data.tables giving
 This is a wrapper for rstan::vb() and rstan::extract() which runs
 and extracts summary information from an LDA model.
 }
-

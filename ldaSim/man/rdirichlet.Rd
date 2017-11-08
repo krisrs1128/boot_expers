@@ -18,4 +18,3 @@ x [matrix] A matrix whose rows are samples from a Dirichlet(alpha).
 \description{
 Simulate from a Dirichlet Distribution
 }
-

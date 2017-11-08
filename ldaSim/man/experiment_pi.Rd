@@ -9,4 +9,3 @@ experiment_pi(index, dimension, estimate, truth)
 \description{
 Permutation to align topics across simulations
 }
-
