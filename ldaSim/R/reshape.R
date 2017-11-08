@@ -90,16 +90,16 @@ get_bootstraps <- function(metadata, param, variable = "v") {
     select(-file, -starts_with("alpha"), -starts_with("gamma"))
 }
 
-#' Compute posterior means across groups
+#' Compute posterior medians across groups
 #' @importFrom magrittr %>%
 #' @importFrom reshape2 melt dcast
 #' @importFrom dplyr group_by_ summarise select_
 #' @export
-posterior_mean <- function(samples, dims) {
+posterior_median <- function(samples, dims) {
     samples %>%
         melt(varnames = c("iteration", rev(dims))) %>%
         group_by_(.dots = dims) %>%
-        summarise(value = mean(value)) %>%
+        summarise(value = median(value)) %>%
         dcast(formula(paste(dims, collapse = "~"))) %>%
         select_(paste0("-", dims[1])) %>%
         as.matrix()
@@ -159,7 +159,7 @@ match_matrix <- function(X, Z) {
 }
 
 #' Permutation to align topics across simulations
-#' @importFrom dplyr select 
+#' @importFrom dplyr select
 #' @importFrom tidyr spread
 #' @importFrom magrittr %>%
 #' @export
@@ -279,4 +279,3 @@ melt_reshaped_samples <- function(samples) {
     spread(estimate_type, val) %>%
     rename(estimate = value)
 }
-
