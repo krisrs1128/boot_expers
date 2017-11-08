@@ -28,4 +28,3 @@ hist_plot [ggplot] The ggplot object showing error histograms across
 \description{
 Plot the histograms of errors associated with the scatterplots from the NMF fits.
 }
-

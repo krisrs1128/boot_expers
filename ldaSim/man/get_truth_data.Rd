@@ -18,4 +18,3 @@ truth [data.frame]
 \description{
 Read true parameter values from file
 }
-

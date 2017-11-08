@@ -24,4 +24,3 @@ X [D x V matrix] A matrix of word counts across documents. Documents
 Given the mixture and topic probabilities, simulate word counts across
 documents.
 }
-

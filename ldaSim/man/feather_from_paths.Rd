@@ -9,4 +9,3 @@ feather_from_paths(paths)
 \description{
 Read feathers from a vector of paths
 }
-

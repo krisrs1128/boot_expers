@@ -28,4 +28,3 @@ x [list] A list with components $theta and $beta containing the
 \description{
 Simulate parameters for LDA
 }
-
